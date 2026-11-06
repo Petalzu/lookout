@@ -1,0 +1,18 @@
+---
+import Base from '../../../layouts/Base.astro';
+import SectionView from '../../../components/document/Section.astro';
+import {api} from '../../../lib/api';
+import type {Section} from '../../../lib/document';
+const name = Astro.params.name || '';
+const query = new URLSearchParams();
+for (const key of ['status', 'rule', 'cursor']) {
+  const value = Astro.url.searchParams.get(key);
+  if (value) query.set(key, value);
+}
+const {data, status} = await api<Section>('/api/ui/packages/' + encodeURIComponent(name) + '/commits?' + query);
+if (!data) Astro.response.status = status;
+---
+<Base title={name} result={data || undefined}>
+  <a href={'/packages/' + encodeURIComponent(name)}>← {name}</a>
+  {data ? <SectionView section={data}/> : <p role="alert">Commit evidence unavailable. Please try again later.</p>}
+</Base>

@@ -1,0 +1,277 @@
+{
+  "schema": 1,
+  "scope": "Bounded historical inclusion; independent controls are not RISC-V discovery positives.",
+  "repositories": {
+    "qemu": {
+      "url": "https://github.com/qemu/qemu.git",
+      "cache": "validation-qemu.git"
+    },
+    "llvm": {
+      "url": "https://github.com/llvm/llvm-project.git",
+      "cache": "validation-llvm.git"
+    }
+  },
+  "history_limit": 128,
+  "cases": [
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "original_reachable",
+      "basis": "Fixed release window contains the candidate object; direct raw Git ancestry check."
+    },
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "7df9aa5f6d600584c556776505253e849b3902ee",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "backport_needs_review",
+      "basis": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established."
+    },
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Candidate is not an ancestor of the lower release; declared target range is empty. Not a semantic absence assertion."
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "original_reachable",
+      "basis": "Fixed release window contains the candidate object; direct raw Git ancestry check."
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "ddac7cfb00ad771f6ef3450fff2d09e749fdbaf9",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "backport_needs_review",
+      "basis": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established."
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Candidate is not an ancestor of the lower release; declared target range is empty. Not a semantic absence assertion."
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "original_reachable",
+      "basis": "Fixed release window contains the candidate object; direct raw Git ancestry check."
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "9d6ac47d3182f2bdadea4bed596c82759a167e67",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "backport_needs_review",
+      "basis": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established."
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Candidate is not an ancestor of the lower release; declared target range is empty. Not a semantic absence assertion."
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "original_reachable",
+      "basis": "Fixed release window contains the candidate object; direct raw Git ancestry check."
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "ebfde6dafff2ebfb653d8b9a620ea52a4f714f5b",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "backport_needs_review",
+      "basis": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established."
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Candidate is not an ancestor of the lower release; declared target range is empty. Not a semantic absence assertion."
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "original_reachable",
+      "basis": "Fixed release window contains the candidate object; direct raw Git ancestry check."
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "57d98debdf8a3a00e6022ad5c4dad1d8c4fa0f39",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "backport_needs_review",
+      "basis": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established."
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "repository": "qemu",
+      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Candidate is not an ancestor of the lower release; declared target range is empty. Not a semantic absence assertion."
+    },
+    {
+      "group": "qemu-control-0846740652d1",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "0846740652d1333369265fa075708b5a386c5ff6",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "strict_patch_evidence",
+      "basis": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer."
+    },
+    {
+      "group": "qemu-control-0846740652d1",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Control outside RISC-V rules: candidate absent from base release and exclusive base-to-base range is empty."
+    },
+    {
+      "group": "qemu-control-2667133c2799",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "2667133c2799f670366b94059cc0513ae57fe8cb",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "strict_patch_evidence",
+      "basis": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer."
+    },
+    {
+      "group": "qemu-control-2667133c2799",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Control outside RISC-V rules: candidate absent from base release and exclusive base-to-base range is empty."
+    },
+    {
+      "group": "qemu-control-438ee08bc97a",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "strict_patch_evidence",
+      "basis": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer."
+    },
+    {
+      "group": "qemu-control-438ee08bc97a",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Control outside RISC-V rules: candidate absent from base release and exclusive base-to-base range is empty."
+    },
+    {
+      "group": "qemu-control-59ecd8a1ac3f",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "strict_patch_evidence",
+      "basis": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer."
+    },
+    {
+      "group": "qemu-control-59ecd8a1ac3f",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Control outside RISC-V rules: candidate absent from base release and exclusive base-to-base range is empty."
+    },
+    {
+      "group": "qemu-control-3f3f5cdb929e",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "3f3f5cdb929e8621699f92ee6e5018e1e6ea5bf2",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "strict_patch_evidence",
+      "basis": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer."
+    },
+    {
+      "group": "qemu-control-3f3f5cdb929e",
+      "split": "independent",
+      "repository": "qemu",
+      "candidate": "7a9ef209e1419e52efc57250d5add430484ae60a",
+      "target": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "expected": "no_evidence_in_range",
+      "basis": "Control outside RISC-V rules: candidate absent from base release and exclusive base-to-base range is empty."
+    },
+    {
+      "group": "llvm-riscv-3397c37d5d31",
+      "split": "independent",
+      "repository": "llvm",
+      "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
+      "target": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+      "start": "a255c1ed36a1d06f79bd2633ba9f8d900153007c",
+      "expected": "original_reachable",
+      "basis": "RISC-V changed path in fixed LLVM release range, raw Git ancestor relation. Title alone does not mention RISC-V."
+    }
+  ]
+}

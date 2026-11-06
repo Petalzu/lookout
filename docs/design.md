@@ -224,3 +224,12 @@ Caller-injected clients remain caller-owned. The operator proxy applies only to 
 HTTP. Browser CSP permits same-origin styles and list-page scripts, not inline or
 external scripts. Other pages disable scripts. BuildSystem CSS is same-origin and
 conditionally revalidated.
+
+## Upstream commit batches
+
+The optional commits phase follows the independent batch-collector pattern, not
+the HTTP adapter runner. Its repository records, fixed-tip manifests, per-side
+evidence and package batches are phase-owned keyed rows in storage format 4.
+Readers join the saved batch with current source and version identities; they
+never run Git. See [Commit evidence](commits.md) for publication, retention,
+resource limits and conservative inclusion semantics.

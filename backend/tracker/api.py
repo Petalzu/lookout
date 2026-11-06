@@ -17,7 +17,7 @@ from tracker.presentation import activity as activity_presentation
 from tracker.presentation import navigation as presentation_navigation
 from tracker.presentation import pages as presentation_pages
 from tracker.presentation.model import DetailDocument, DocumentTheme, ListingDocument, Section
-from tracker.readmodel import activity
+from tracker.readmodel import activity, commits
 from tracker.readmodel import monitors as monitor_views
 from tracker.readmodel import snapshot as view
 from tracker.readmodel.cache import ProjectionCache
@@ -299,24 +299,89 @@ class ActivitySummary(BaseModel):
     labels: list[MaintenanceLabel]
 
 
+class CommitTarget(BaseModel):
+    oid: str
+    version: str | None
+    revision: str
+    mapping_version: int
+    ref: str | None = None
+    source_url: str | None
+    review_url: str | None
+    side: Literal['current', 'upgrade']
+    source_kind: Literal['upstream']
+
+
+class CommitReason(BaseModel):
+    rule: str
+    field: str
+    fragment: str
+    path: str | None
+
+
+class CommitSide(BaseModel):
+    status: Literal['original_reachable', 'strict_patch_evidence', 'backport_needs_review',
+                    'no_evidence_in_range', 'unknown']
+    reason: str | None
+    matches: list[str]
+    reverts: list[str]
+    coverage: dict[str, Any]
+    checked_at: str | None
+    attempted_at: str | None = None
+    retained: bool = False
+    error: str | None = None
+    target: CommitTarget | None
+    key: str
+
+
+class CommitEntry(BaseModel):
+    oid: str
+    subject: str
+    committed_at: str | None
+    url: str
+    reasons: list[CommitReason]
+    reasons_truncated: bool = False
+    sides: dict[Literal['current', 'upgrade'], CommitSide]
+    stale: bool = False
+
+
+class CommitSummary(BaseModel):
+    kind: Literal['commits']
+    history_url: str | None = None
+    entries: list[CommitEntry]
+    selected: int
+    total: int
+    batch_id: str | None
+    repository: str | None
+    coverage: dict[str, Any]
+    labels: list[MaintenanceLabel]
+
+
+class CommitPage(BaseModel):
+    coverage: dict[str, Any] = Field(default_factory=dict)
+    items: list[CommitEntry]
+    total: int
+    next_cursor: str | None
+    batch_id: str | None
+
+
 class MonitorDescription(BaseModel):
     id: str
     title: str
-    kind: Literal['source', 'version', 'build', 'evidence', 'requires', 'activity']
+    kind: Literal['source', 'version', 'build', 'evidence', 'requires', 'activity', 'commits']
 
 
 class MonitorSummary(BaseModel):
     id: str
     title: str
     check: ObservationCheck
-    data: Annotated[SourceSummary | VersionSummary | BuildSummary | EvidenceSummary | RequiresSummary | ActivitySummary, Field(discriminator='kind')]
+    data: Annotated[SourceSummary | VersionSummary | BuildSummary | EvidenceSummary | RequiresSummary | ActivitySummary | CommitSummary, Field(discriminator='kind')]
 
 
 class MonitorObservation(BaseModel):
     id: str
     title: str
     check: ObservationCheck
-    data: Annotated[SourceObservation | VersionObservation | BuildObservation | EvidenceObservation | RequiresObservation | ActivitySummary, Field(discriminator='kind')]
+    data: Annotated[SourceObservation | VersionObservation | BuildObservation | EvidenceObservation | RequiresObservation | ActivitySummary | CommitSummary, Field(discriminator='kind')]
 
 
 class PackageData[Observation: MonitorSummary | MonitorObservation](BaseModel):
@@ -353,6 +418,7 @@ class MonitoredList(BaseModel):
     buildsystems: dict[str, int]
     maintenance_labels: dict[str, int]
     requires_counts: dict[str, int]
+    commits_counts: dict[str, dict[str, int]] = Field(default_factory=dict)
     version_signals: dict[str, int]
     build_statuses: dict[str, list[BuildStatusOption]]
     check_statuses: dict[str, int]
@@ -523,7 +589,7 @@ def create_app(db=None):
             result = index.select(query=filters.q, monitor=monitor, filters=filters.filters,
                 page=filters.page, per_page=filters.per_page,
                 search=search,
-                findings_only=bool(focused and focused['kind'] in ('evidence', 'requires') and section == 'results'))
+                findings_only=bool(focused and focused['kind'] in ('evidence', 'requires', 'commits') and section == 'results'))
         except ValueError as error:
             raise HTTPException(422, str(error)) from None
         if document:
@@ -594,6 +660,33 @@ def create_app(db=None):
     @app.get('/api/ui/packages/{name}/activity', response_model=Section)
     def activity_document(name: str, kind: Literal['pr', 'issue'], cursor: str | None = None):
         return activity_presentation.section(name, kind, activity_history(name, kind, cursor, 20))
+
+    @app.get('/api/v2/packages/{name}/commits', response_model=CommitPage)
+    def package_commits(name: str, cursor: str | None = None,
+                        per_page: Annotated[int, Query(ge=1, le=50)] = 20,
+                        status: Literal['original_reachable', 'strict_patch_evidence', 'backport_needs_review',
+                                        'no_evidence_in_range', 'unknown'] | None = None,
+                        rule: Annotated[str | None, Query(min_length=1, max_length=64)] = None):
+        snap, index, _ = data()
+        find_package(name, index)
+        try:
+            return commits.page(snap, name, cursor=cursor, per_page=per_page, status=status, rule=rule)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from None
+
+    @app.get('/api/ui/packages/{name}/commits', response_model=Section)
+    def commits_document(name: str, cursor: str | None = None,
+                         status: Literal['original_reachable', 'strict_patch_evidence', 'backport_needs_review',
+                                         'no_evidence_in_range', 'unknown'] | None = None,
+                         rule: Annotated[str | None, Query(min_length=1, max_length=64)] = None):
+        from tracker.presentation.commits import history_section
+        snap, index, _ = data()
+        find_package(name, index)
+        try:
+            history = commits.page(snap, name, cursor=cursor, status=status, rule=rule)
+        except ValueError as error:
+            raise HTTPException(422, str(error)) from None
+        return history_section(name, history, status=status, rule=rule)
 
     @app.get('/api/ui/theme', response_model=DocumentTheme)
     def document_theme():
