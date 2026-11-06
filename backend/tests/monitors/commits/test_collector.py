@@ -61,8 +61,13 @@ def test_fixed_manifest_resumes_same_tip(package):
     assert next_scan['cursor'] == 2
 
 
-def test_real_collector_storage_and_unknown_upgrade(package):
+@pytest.mark.parametrize(('relation', 'reason'), [
+    ('current', 'no_candidate_release'),
+    ('outdated', 'target_unresolved'),
+])
+def test_real_collector_storage_and_upgrade_eligibility(package, monkeypatch, relation, reason):
     config, db, repo, _, fix = package
+    monkeypatch.setattr(state, 'compare', lambda *args: relation)
     result = collect(config, db, repositories={'fixture': repo})
     assert state.read(db) == result
     batch = result['commits_batches']['binutils']['active']
@@ -72,7 +77,8 @@ def test_real_collector_storage_and_unknown_upgrade(package):
     assert current['status'] == 'original_reachable'
     assert current['target']['oid'] == fix
     assert current['checked_at'] is not None
-    assert batch['entries'][0]['sides']['upgrade']['reason'] == 'no_candidate_release'
+    assert batch['entries'][0]['sides']['upgrade']['reason'] == reason
+    assert batch['target_version'] == ('3.10.0' if relation == 'outdated' else None)
 
 
 def test_same_evidence_keeps_source_time(package):
