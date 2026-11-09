@@ -235,6 +235,9 @@ def healthy(engine, name, image, *, timeout=90):
 def no_data_users(service):
     for ident in run([service.engine, 'ps', '-q']).split():
         info = json.loads(run([service.engine, 'inspect', ident]))[0]
+        # A listed container may have exited since the engine's list snapshot.
+        if info.get('State', {}).get('Status') == 'exited':
+            continue
         for mount in info.get('Mounts', []):
             if service.engine == 'docker':
                 overlap = mount.get('Name') == service.settings['data']
