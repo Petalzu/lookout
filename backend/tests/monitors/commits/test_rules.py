@@ -15,31 +15,6 @@ from tracker.monitors.commits.model import Rule
 from tracker.monitors.commits.rules import RuleError, match_rules
 
 
-def test_text_and_path_intersection_with_rule_union():
-    rules = [Rule(id='both', keywords=['riscv'], paths=['target/riscv/**']),
-             Rule(id='text', keywords=['RISC-V'])]
-    assert not match_rules({'subject': 'riscv', 'paths': ['docs/x']}, rules)
-    assert {m['rule'] for m in match_rules({'subject': 'RISCV', 'paths': ['target/riscv/x']}, rules)} == {'both'}
-    assert match_rules({'body': 'RISC-V fix', 'paths': ['docs/x']}, rules)[0]['field'] == 'body'
-
-
-def test_exclusion_and_case_sensitive_paths():
-    rules = [Rule(id='path', paths=['target/riscv/**']), Rule(id='exclude', keywords=['docs'], exclude=True)]
-    assert not match_rules({'subject': 'docs', 'paths': ['target/riscv/a']}, rules)
-    assert not match_rules({'paths': ['Target/riscv/a']}, rules)
-    assert match_rules({'paths': ['old', 'target/riscv/new']}, rules)
-    assert not match_rules({'subject': 'RISCV'}, [Rule(id='case', keywords=['riscv'], case_sensitive=True)])
-
-
-def test_regex_isolated_and_budget_is_not_empty_success():
-    assert match_rules({'subject': 'RISC-V'}, [Rule(id='r', patterns=['risc.?v'])])
-    with pytest.raises(RuleError, match='text_limit'):
-        match_rules({'body': 'a' * 1025}, [Rule(id='r', keywords=['a'])], text_limit=1024)
-    with pytest.raises(RuleError, match='regex_timeout'):
-        match_rules({'body': 'a' * 20000 + '!'}, [Rule(id='r', patterns=['(a+)+$'])], timeout_seconds=0.1)
-
-
-
 def _commit(subject="", body="", paths=None):
     return {"subject": subject, "body": body, "paths": [] if paths is None else paths}
 

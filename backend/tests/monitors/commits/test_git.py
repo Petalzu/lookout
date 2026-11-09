@@ -1,27 +1,20 @@
-import subprocess
 
 import pytest
 
+from tests.helpers.git import commit, git, init
 from tracker.monitors.commits.git import GitError, Repository
-
-
-def command(path, *args):
-    return subprocess.check_output(['git', '-c', f'safe.directory={path}', '-C', str(path), *args],
-                                   stderr=subprocess.DEVNULL).decode().strip()
 
 
 @pytest.fixture
 def history(tmp_path):
-    command(tmp_path, 'init', '-q')
-    command(tmp_path, 'config', 'user.name', 'Fixture')
-    command(tmp_path, 'config', 'user.email', 'fixture@example.org')
+    init(tmp_path)
     (tmp_path / 'a').write_text('one\n')
-    command(tmp_path, 'add', 'a')
-    command(tmp_path, 'commit', '-qm', 'riscv: first')
-    first = command(tmp_path, 'rev-parse', 'HEAD')
+    git(tmp_path, 'add', 'a')
+    git(tmp_path, 'commit', '-qm', 'riscv: first')
+    first = git(tmp_path, 'rev-parse', 'HEAD')
     (tmp_path / 'a').write_text('two\n')
-    command(tmp_path, 'commit', '-qam', 'second')
-    return Repository(tmp_path), first, command(tmp_path, 'rev-parse', 'HEAD')
+    git(tmp_path, 'commit', '-qam', 'second')
+    return Repository(tmp_path), first, git(tmp_path, 'rev-parse', 'HEAD')
 
 
 def test_objects_and_ancestry_are_exact(history):
@@ -68,18 +61,16 @@ def test_utf8_control_character_and_hash_named_paths_are_preserved(history):
     names = ['a' * 40, 'tab\tname', 'line\nname', '目标']
     for name in names:
         (repo.path / name).write_text('path fixture')
-    command(repo.path, 'add', '.')
-    command(repo.path, 'commit', '-qm', 'paths')
+    commit(repo.path, 'paths')
     assert set(repo.read_commit(repo.resolve('HEAD'))['paths']) == set(names)
 
 
 def test_sha256_object_format_is_not_truncated(tmp_path):
-    command(tmp_path, 'init', '-q', '--object-format=sha256')
-    command(tmp_path, 'config', 'user.name', 'Fixture')
-    command(tmp_path, 'config', 'user.email', 'fixture@example.org')
+    git(tmp_path, 'init', '-q', '--object-format=sha256')
+    git(tmp_path, 'config', 'user.name', 'Fixture')
+    git(tmp_path, 'config', 'user.email', 'fixture@example.org')
     (tmp_path / 'file').write_text('sha256')
-    command(tmp_path, 'add', '.')
-    command(tmp_path, 'commit', '-qm', 'sha256')
+    commit(tmp_path, 'sha256')
     repo = Repository(tmp_path)
     value = repo.resolve('HEAD')
     assert len(value) == 64
@@ -122,7 +113,7 @@ def test_deadline_and_error_output_are_bounded_without_leaking_diagnostics(histo
 
 
 def test_fetch_refuses_inherited_repo_transport_configuration(tmp_path):
-    command(tmp_path, 'init', '-q', '--bare')
+    git(tmp_path, 'init', '-q', '--bare')
     config = tmp_path / 'config'
     config.write_text(config.read_text() + '\n[http]\n\tproxy = http://not-approved.invalid\n')
     repo = Repository(tmp_path)
@@ -138,7 +129,7 @@ def test_cache_symlinks_and_global_object_alternates_are_rejected(history, tmp_p
         Repository(alias)
     bare = tmp_path / 'bare'
     bare.mkdir()
-    command(bare, 'init', '-q', '--bare')
+    git(bare, 'init', '-q', '--bare')
     (bare / 'objects/info/alternates').write_text(str(repo.path / '.git/objects') + '\n')
     with pytest.raises(GitError, match='cache_alternates'):
         Repository(bare).fetch('https://example.org/repo.git', 'refs/heads/main')

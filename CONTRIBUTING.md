@@ -46,11 +46,6 @@ Add `--cov-report=xml` to write `backend/coverage.xml`.
 
 Then run [Image checks](#image-checks).
 
-If an expected pull-request run is absent, dispatch the `CI` workflow on the
-exact feature branch. Manual runs execute the full non-release gate without
-publishing images, merging changes, or creating a Release. Record the run SHA;
-a successful run on an older commit is not validation of new changes.
-
 After changing response models, run `python3 scripts/api-types.py` and review the
 resulting `frontend/src/lib/api.generated.ts`. `openapi-typescript` compiles the
 reachable UI schemas. `src/lib/document.ts` selects display primitives. Do not

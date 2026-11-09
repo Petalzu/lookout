@@ -72,10 +72,6 @@ def _files(repo, value):
     return StrictChange(oid=value, parent_oid=parent, files=sorted(result, key=lambda item: item.path_b64)) if result else None
 
 
-def _references(body, original):
-    return any(original.startswith(token) for token in re.findall(r'(?<![a-f0-9])[a-f0-9]{7,64}(?![a-f0-9])', body))
-
-
 def analyze(repo, candidate, target, *, history_limit=2000, history_start=None):
     result: Analysis = {'status': 'unknown', 'reason': None, 'matches': [], 'reverts': [], 'strict_manifest': None,
                         'coverage': {'target': target, 'limit': history_limit, 'complete': False, 'checked': 0, 'start': history_start, 'ancestry_complete': False}}
@@ -102,34 +98,33 @@ def analyze(repo, candidate, target, *, history_limit=2000, history_start=None):
         result['coverage'].update(checked=0, complete=False)
         strict = _files(repo, candidate) if not reachable else None
         patch = repo.patch_id(candidate) if strict else None
-        associations, matched, verified = [], [], []
+        associations = set()
+        verified: StrictManifest | None = None
         reverts = {}
         for value in history:
             commit = repo.read_commit(value)
             body = commit['subject'] + '\n' + commit['body']
             if not reachable and value != candidate:
-                referenced = _references(body, candidate)
-                if referenced:
-                    tokens = re.findall(r'(?<![a-f0-9])[a-f0-9]{7,64}(?![a-f0-9])', body)
-                    references = [token for token in tokens if candidate.startswith(token)]
-                    if any(repo.resolve(token) == candidate for token in references):
-                        associations.append(value)
+                references = (token for token in re.findall(r'(?<![a-f0-9])[a-f0-9]{7,64}(?![a-f0-9])', body)
+                              if candidate.startswith(token))
+                if any(repo.resolve(token) == candidate for token in references):
+                    associations.add(value)
                 if patch and repo.patch_id(value) == patch:
                     compared = _files(repo, value)
                     if compared and strict and compared.files == strict.files:
                         try:
-                            manifest = StrictManifest(candidate=strict, matches=[*verified, compared])
+                            verified = StrictManifest(candidate=strict,
+                                matches=[*(verified.matches if verified else []), compared])
                         except ValueError as error:
                             raise GitError('strict_manifest_limit') from error
-                        verified.append(compared)
-                        matched.append(value)
-                        result['strict_manifest'] = manifest.model_dump()
                     else:
-                        associations.append(value)
+                        associations.add(value)
             for match in re.findall(r'This reverts commit ([a-f0-9]{40}|[a-f0-9]{64})\.', commit['body']):
                 reverts[value] = match
             result['coverage']['checked'] += 1
         result['coverage']['complete'] = history_complete
+        matched = [change.oid for change in verified.matches] if verified else []
+        result['strict_manifest'] = verified.model_dump() if verified else None
         affected = {candidate, *matched, *associations}
         for value, reverted in reverts.items():
             if reverted in affected:
@@ -140,7 +135,7 @@ def analyze(repo, candidate, target, *, history_limit=2000, history_start=None):
         if matched:
             result.update(status='strict_patch_evidence', matches=matched)
         elif associations:
-            result.update(status='backport_needs_review', matches=sorted(set(associations)), reason='association_only')
+            result.update(status='backport_needs_review', matches=sorted(associations), reason='association_only')
         elif not strict:
             result.update(status='unknown', reason='unsupported_commit_shape')
         elif not result['coverage']['complete'] or not result['coverage']['ancestry_complete']:

@@ -236,6 +236,8 @@ def collect(config, db, *, repositories=None, now=None):
         scans = {key: dict(value) for key, value in snapshot.get('commits_scans', {}).items()}
         evidence = {key: dict(value) for key, value in snapshot.get('commits_evidence', {}).items()}
         batches = {key: dict(value) for key, value in snapshot.get('commits_batches', {}).items()}
+        inputs = {name: input_key(config, snapshot, name, package, options.repositories[package.repository])
+                  for name, package in packages.items() if name in state.package_names(snapshot)}
         components = {}
         for identity in sorted({policy.repository for policy in packages.values()}):
             policy = options.repositories[identity]
@@ -290,7 +292,7 @@ def collect(config, db, *, repositories=None, now=None):
                 batch = batches.get(name, {}).get('active')
                 if batch and name in state.package_names(latest):
                     expected = input_key(config, latest, name, package, options.repositories[package.repository])
-                    if batch['input_key'] == expected:
+                    if batch['input_key'] == inputs.get(name) == expected:
                         valid_batches[name].update(active=batch, rules=batches[name].get('rules', {}))
             active_repositories = {package.repository for package in packages.values()}
             records = {key: value for key, value in records.items() if key in active_repositories}

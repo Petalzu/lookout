@@ -4,10 +4,11 @@ import binascii
 import hashlib
 import json
 import re
+import unicodedata
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from tracker.monitors.schedule import Schedule
 
@@ -43,6 +44,12 @@ def https_url(value):
             or '%' in parsed.path or any(part in ('.', '..') for part in parsed.path.split('/'))):
         raise ValueError('a canonical public HTTPS URL is required')
     return value.rstrip('/')
+
+
+def safe_path(value):
+    return (isinstance(value, str) and 0 < len(value) <= 4096 and "\\" not in value
+            and not any(part in ('', '.', '..') for part in value.split('/'))
+            and not any(unicodedata.category(char).startswith('C') for char in value))
 
 
 class Policy(BaseModel):
@@ -115,19 +122,20 @@ class Rule(Policy):
     exclude: bool = False
 
     @model_validator(mode='after')
-    def validate_rule(self):
+    def validate_rule(self, info: ValidationInfo):
         if not (self.keywords or self.patterns or self.paths):
             raise ValueError('an empty rule matches nothing and must not be configured')
         for term in [*self.keywords, *self.patterns, *self.paths]:
             if not term or len(term) > 1024:
                 raise ValueError('rule terms must contain 1..1024 characters')
-        for pattern in self.patterns:
+            term.encode('utf-8')
+        for pattern in self.patterns if not (info.context or {}).get('worker_compiles_patterns') else []:
             try:
                 re.compile(pattern)
             except re.PatternError as error:
                 raise ValueError('invalid rule regular expression') from error
         for path in self.paths:
-            if path.startswith('/') or '..' in path.split('/') or '\\' in path:
+            if not safe_path(path):
                 raise ValueError('rule paths must be repository-relative POSIX patterns')
         return self
 

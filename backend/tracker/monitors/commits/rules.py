@@ -33,16 +33,9 @@ def _encoded(value):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
 
-def _safe_path(value):
-    return (
-        isinstance(value, str) and 0 < len(value) <= 4096
-        and "\\" not in value
-        and not any(part in ("", ".", "..") for part in value.split("/"))
-        and not any(unicodedata.category(char).startswith("C") for char in value)
-    )
-
-
 def _commit_data(commit, text_limit):
+    from tracker.monitors.commits.model import safe_path
+
     if not isinstance(commit, dict):
         raise RuleError("invalid_commit")
     text = {field: commit.get(field, "") for field in ("subject", "body")}
@@ -62,7 +55,7 @@ def _commit_data(commit, text_limit):
     for path in paths:
         if not isinstance(path, str):
             raise RuleError("invalid_commit")
-        if not _safe_path(path):
+        if not safe_path(path):
             raise RuleError("invalid_path")
         size += len(path.encode("utf-8"))
         if size > _INPUT_LIMIT:
@@ -77,36 +70,16 @@ def _rule_data(rules):
         raise RuleError("invalid_rule")
     if len(rules) > 128:
         raise RuleError("input_limit")
-    selected = []
-    identities = set()
-    for rule in rules:
-        if not isinstance(rule, Rule):
-            raise RuleError("invalid_rule")
-        try:
-            data = {name: getattr(rule, name) for name in ("id", "keywords", "patterns", "paths",
-                                                         "case_sensitive", "exclude")}
-        except AttributeError:
-            raise RuleError("invalid_rule") from None
-        identity = data["id"]
-        if (not isinstance(identity, str) or len(identity) > 64
-                or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]*", identity) or identity in identities
-                or type(data["case_sensitive"]) is not bool or type(data["exclude"]) is not bool):
-            raise RuleError("invalid_rule")
-        for name, limit in (("keywords", 64), ("patterns", 32), ("paths", 64)):
-            terms = data[name]
-            if (not isinstance(terms, list) or len(terms) > limit
-                    or any(not isinstance(term, str) or not 0 < len(term) <= 1024 for term in terms)):
-                raise RuleError("invalid_rule")
-            try:
-                for term in terms:
-                    term.encode("utf-8")
-            except UnicodeError:
-                raise RuleError("invalid_rule") from None
-        if (not any(data[name] for name in ("keywords", "patterns", "paths"))
-                or any(not _safe_path(pattern) for pattern in data["paths"])):
-            raise RuleError("invalid_rule")
-        identities.add(identity)
-        selected.append(data)
+    if any(not isinstance(rule, Rule) for rule in rules):
+        raise RuleError("invalid_rule")
+    try:
+        # Reuse configuration validation; runtime syntax compilation stays in the worker.
+        selected = [Rule.model_validate({name: getattr(rule, name) for name in Rule.model_fields},
+                    context={'worker_compiles_patterns': True}).model_dump() for rule in rules]
+    except (ValueError, AttributeError):
+        raise RuleError("invalid_rule") from None
+    if len({rule['id'] for rule in selected}) != len(selected):
+        raise RuleError("invalid_rule")
     return selected
 
 

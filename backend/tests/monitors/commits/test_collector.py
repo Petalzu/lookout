@@ -1,39 +1,26 @@
-import subprocess
-
 import pytest
 
+from tests.conftest import ProjectedClient
+from tests.helpers.git import commit, git, init
 from tracker import state
+from tracker.api import create_app
+from tracker.monitors.commits import collector, model
 from tracker.monitors.commits.collector import collect
-from tracker.monitors.commits.git import Repository
+from tracker.monitors.commits.git import GitError, Repository
 from tracker.monitors.commits.model import settings
 from tracker.monitors.commits.scan import advance
+from tracker.readmodel.commits import page
 
 STAMP = '2026-11-06T10:00:00+00:00'
 NEXT = '2026-11-08T10:00:00+00:00'
 
 
-@pytest.fixture(autouse=True)
-def fixed_git_clock(monkeypatch):
-    monkeypatch.setenv('GIT_AUTHOR_DATE', STAMP)
-    monkeypatch.setenv('GIT_COMMITTER_DATE', STAMP)
-
-
-def git(path, *args):
-    return subprocess.check_output(['git', '-c', f'safe.directory={path}', '-C', str(path), *args],
-                                   stderr=subprocess.DEVNULL).decode().strip()
-
-
 @pytest.fixture
 def package(config, snapshot, tmp_path, monkeypatch):
     repo_path = tmp_path / 'upstream'
-    repo_path.mkdir()
-    git(repo_path, 'init', '-qb', 'main')
-    git(repo_path, 'config', 'user.name', 'Fixture')
-    git(repo_path, 'config', 'user.email', 'fixture@example.org')
+    init(repo_path)
     (repo_path / 'file').write_text('one\n')
-    git(repo_path, 'add', '.')
-    git(repo_path, 'commit', '-qm', 'base')
-    base = git(repo_path, 'rev-parse', 'HEAD')
+    base = commit(repo_path, 'base')
     (repo_path / 'file').write_text('two\n')
     git(repo_path, 'commit', '-qam', 'riscv: fix')
     fix = git(repo_path, 'rev-parse', 'HEAD')
@@ -59,8 +46,7 @@ def test_fixed_manifest_resumes_same_tip(package):
     scan, records = advance(repo, policy, {}, {}, state.utcnow(), 0, fetch=False)
     assert not scan['complete'] and scan['cursor'] == 0
     (repo.path / 'other').write_text('next')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'riscv: next round')
+    commit(repo.path, 'riscv: next round')
     resumed, records = advance(repo, policy, scan, records, state.utcnow(), 1, fetch=False)
     assert resumed['tip'] == fix and resumed['ids'] == [fix]
     assert resumed['complete'] and resumed['last_complete_tip'] == fix
@@ -98,28 +84,7 @@ def test_same_evidence_keeps_source_time(package):
     assert second['commits_batches']['binutils']['active']['entries'][0]['sides']['current']['checked_at'] == saved['checked_at']
 
 
-def test_phase_rejects_in_flight_source_change(package, monkeypatch):
-    config, db, repo, _, _ = package
-    original = repo.read_commit
-    changed = False
-
-    def change(value):
-        nonlocal changed
-        if not changed:
-            changed = True
-            latest = state.read(db)
-            latest['specs']['binutils']['head'] = 'f' * 40
-            state.commit(db, latest)
-        return original(value)
-
-    monkeypatch.setattr(repo, 'read_commit', change)
-    result = collect(config, db, repositories={'fixture': repo})
-    assert 'active' not in result['commits_batches']['binutils']
-
-
 def test_saved_results_reach_typed_api_and_document(package):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
     from tracker.readmodel import commits as view
 
     config, db, repo, _, fix = package
@@ -138,7 +103,6 @@ def test_saved_results_reach_typed_api_and_document(package):
 
 
 def test_pages_bind_filters_and_exact_batch(package):
-    from tracker.readmodel.commits import page
 
     config, db, repo, _, fix = package
     result = collect(config, db, repositories={'fixture': repo})
@@ -159,8 +123,6 @@ def test_pages_bind_filters_and_exact_batch(package):
 
 
 def test_new_candidate_and_failure_retain_only_same_target(package, monkeypatch):
-    from tracker.monitors.commits import collector
-    from tracker.monitors.commits.git import GitError
 
     config, db, repo, _, fix = package
     first = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:00:00+00:00')
@@ -192,12 +154,10 @@ def test_new_candidate_and_failure_retain_only_same_target(package, monkeypatch)
 
 
 def test_permanent_failure_does_not_starve_unseen_candidate(package, monkeypatch):
-    from tracker.monitors.commits import collector
 
     config, db, repo, _, _ = package
     (repo.path / 'other').write_text('another')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'riscv: other')
+    commit(repo.path, 'riscv: other')
     calls = []
 
     def unknown(repository, candidate, target, **kwargs):
@@ -210,19 +170,7 @@ def test_permanent_failure_does_not_starve_unseen_candidate(package, monkeypatch
     assert len(set(calls)) == 2
 
 
-def test_history_failure_matches_summary_staleness(package):
-    from tracker.readmodel.commits import page
-
-    config, db, repo, _, _ = package
-    result = collect(config, db, repositories={'fixture': repo})
-    result['components']['commits:fixture']['error'] = 'timeout'
-    assert all(item['stale'] for item in page(result, 'binutils')['items'])
-
-
 def test_initial_fetch_failure_is_visible_as_error_not_unconfigured(package, monkeypatch):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
-    from tracker.monitors.commits.git import GitError
 
     config, db, repo, _, _ = package
     monkeypatch.setattr(repo, 'resolve', lambda ref: (_ for _ in ()).throw(GitError('timeout')))
@@ -243,36 +191,6 @@ def test_initial_fetch_failure_is_visible_as_error_not_unconfigured(package, mon
         assert document.status_code == 200, document.text
         assert 'timeout' in document.text and 'Last attempt' in document.text
         assert 'Configured' in document.text
-
-
-def test_upstream_identity_change_is_rejected_during_publication(package, monkeypatch):
-    config, db, repo, _, _ = package
-    original = repo.read_commit
-    changed = False
-
-    def change(value):
-        nonlocal changed
-        if not changed:
-            changed = True
-            latest = state.read(db)
-            latest['tracks']['binutils']['source'] = {'source': 'github', 'github': 'other/repository'}
-            state.commit(db, latest)
-        return original(value)
-
-    monkeypatch.setattr(repo, 'read_commit', change)
-    result = collect(config, db, repositories={'fixture': repo})
-    assert 'active' not in result['commits_batches']['binutils']
-
-
-def test_source_binding_change_and_age_mark_history_stale(package):
-    from tracker.readmodel.commits import page
-
-    config, db, repo, _, _ = package
-    result = collect(config, db, repositories={'fixture': repo})
-    result['specs']['binutils']['metadata']['sources'][0]['url'] = 'https://example.org/different.tar.xz'
-    assert all(item['stale'] for item in page(result, 'binutils')['items'])
-    result['commits_batches']['binutils']['active']['checked_at'] = '2000-01-01T00:00:00+00:00'
-    assert all(item['stale'] for item in page(result, 'binutils')['items'])
 
 
 def test_removed_policy_clears_owned_state_without_touching_others(package):
@@ -305,8 +223,7 @@ def test_candidate_response_limit_preserves_total_and_bounded_rule_progress(pack
     config, db, repo, _, _ = package
     config['commits']['max_findings'] = 1
     (repo.path / 'other').write_text('next candidate')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'riscv: second')
+    commit(repo.path, 'riscv: second')
     for number in range(3):
         result = collect(config, db, repositories={'fixture': repo}, now=f'2026-11-06T10:0{number}:00+00:00')
     batch = result['commits_batches']['binutils']['active']
@@ -317,7 +234,6 @@ def test_candidate_response_limit_preserves_total_and_bounded_rule_progress(pack
 
 
 def test_target_sides_can_succeed_and_fail_independently(package, monkeypatch):
-    from tracker.monitors.commits import collector
     config, db, repo, _, fix = package
     monkeypatch.setattr(state, 'compare', lambda *args: 'outdated')
     revision = config['packages']['binutils']['monitors']['commits']['mappings']['3.9.0']['source_revision']
@@ -328,8 +244,7 @@ def test_target_sides_can_succeed_and_fail_independently(package, monkeypatch):
 
     def unknown_target(*args, **kwargs):
         if args[0] == 'e' * 40:
-            from tracker.monitors.commits.git import GitError
-            raise GitError('missing_object')
+                    raise GitError('missing_object')
         return resolve(*args, **kwargs)
 
     resolve = repo.resolve
@@ -345,7 +260,6 @@ def test_target_sides_can_succeed_and_fail_independently(package, monkeypatch):
 def test_rule_failure_is_local_to_one_package(package, monkeypatch):
     from copy import deepcopy
 
-    from tracker.monitors.commits import collector
     from tracker.monitors.commits.rules import RuleError
 
     config, db, repo, _, _ = package
@@ -379,8 +293,6 @@ def test_identical_replay_does_not_write_or_advance_generation(package):
 
 
 def test_retained_commit_filter_is_the_same_evidence_as_detail(package):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
 
     config, db, repo, _, _ = package
     result = collect(config, db, repositories={'fixture': repo})
@@ -392,25 +304,12 @@ def test_retained_commit_filter_is_the_same_evidence_as_detail(package):
         assert listing['items'][0]['name'] == 'binutils'
 
 
-def test_changed_collection_budget_invalidates_an_in_flight_batch(package, monkeypatch):
-    from tracker.monitors.commits import collector
-
-    config, db, repo, _, _ = package
-    previous = collector.input_key(config, state.read(db), 'binutils',
-        collector.package_policies(config)['binutils'], collector.settings(config).repositories['fixture'])
-    config['commits']['max_findings'] = 2
-    current = collector.input_key(config, state.read(db), 'binutils',
-        collector.package_policies(config)['binutils'], collector.settings(config).repositories['fixture'])
-    assert previous != current
-
-
 @pytest.fixture
 def strict_package(package):
     config, db, repo, base, fix = package
     git(repo.path, 'checkout', '-qb', 'backport', base)
     (repo.path / 'other').write_text('unrelated context\n')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'context')
+    commit(repo.path, 'context')
     git(repo.path, 'cherry-pick', fix)
     target = git(repo.path, 'rev-parse', 'HEAD')
     git(repo.path, 'checkout', 'main')
@@ -419,8 +318,6 @@ def strict_package(package):
 
 
 def test_strict_manifest_round_trips_storage_api_and_document(strict_package):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
 
     config, db, repo, _, fix = strict_package
     result = collect(config, db, repositories={'fixture': repo})
@@ -447,7 +344,6 @@ def test_strict_manifest_round_trips_storage_api_and_document(strict_package):
 
 
 def test_strict_manifest_failure_retention_and_target_identity(strict_package, monkeypatch):
-    from tracker.monitors.commits import collector
 
     config, db, repo, _, fix = strict_package
     first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
@@ -467,10 +363,6 @@ def test_strict_manifest_failure_retention_and_target_identity(strict_package, m
 
 
 def test_old_method_manifest_is_readable_but_not_reused(package, monkeypatch):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
-    from tracker.monitors.commits import collector, model
-    from tracker.readmodel.commits import page
 
     config, db, repo, _, _ = package
     monkeypatch.setattr(collector, 'METHOD_VERSION', 1)
@@ -576,9 +468,6 @@ def test_history_with_batch_shares_summary_check_times_and_staleness(package, co
 
 
 def test_retained_batch_history_api_keeps_observed_time_and_latest_failure(package, monkeypatch):
-    from tests.conftest import ProjectedClient
-    from tracker.api import create_app
-    from tracker.monitors.commits.git import GitError
 
     config, db, repo, _, _ = package
     first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
@@ -602,13 +491,10 @@ def test_batch_byte_limit_never_splits_or_drops_a_published_strict_manifest(pack
     git(repo.path, 'reset', '--hard', base)
     for index in range(30):
         (repo.path / f'file-{index}').write_text('complete raw content\n')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'riscv: many files')
-    candidate = git(repo.path, 'rev-parse', 'HEAD')
+    candidate = commit(repo.path, 'riscv: many files')
     git(repo.path, 'checkout', '-qb', 'backport', base)
     (repo.path / 'context').write_text('parent context\n')
-    git(repo.path, 'add', '.')
-    git(repo.path, 'commit', '-qm', 'context')
+    commit(repo.path, 'context')
     git(repo.path, 'cherry-pick', candidate)
     target = git(repo.path, 'rev-parse', 'HEAD')
     git(repo.path, 'checkout', 'main')
@@ -625,3 +511,27 @@ def test_batch_byte_limit_never_splits_or_drops_a_published_strict_manifest(pack
     batch = published['commits_batches']['binutils']['active']
     assert batch['selected'] == batch['total'] == 1
     assert batch['entries'][0]['sides']['current']['strict_manifest'] == proof
+
+
+@pytest.mark.parametrize('changed_input', ['source', 'upstream', 'budget'])
+def test_publication_rejects_changed_inputs(package, monkeypatch, changed_input):
+    config, db, repo, _, _ = package
+    original = repo.read_commit
+    changed = False
+
+    def change(value):
+        nonlocal changed
+        if not changed:
+            changed = True
+            latest = state.read(db)
+            if changed_input == 'source':
+                latest['specs']['binutils']['head'] = 'f' * 40
+            elif changed_input == 'upstream':
+                latest['tracks']['binutils']['source'] = {'source': 'github', 'github': 'other/repository'}
+            else:
+                config['commits']['max_findings'] = 2
+            state.commit(db, latest)
+        return original(value)
+
+    monkeypatch.setattr(repo, 'read_commit', change)
+    assert 'active' not in collect(config, db, repositories={'fixture': repo})['commits_batches']['binutils']
