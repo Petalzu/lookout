@@ -95,8 +95,11 @@ The commits batch monitor deliberately does not change their runner contract.
 Stable patch-id only shortlists candidates. Empty files and absent files differ.
 Merge/root/empty commits, binary or non-UTF-8 content, moved paths and changed
 context are not automatically confirmed by the strict method. Revert and
-revert-of-revert links are clues in the target history; they never erase the
-historical inclusion fact or establish present functional behavior.
+revert-of-revert links are clues in the declared target history, including
+verified reference-only and non-strict patch associations. Unrelated reverts and
+objects on other branches are not reported. These clues never promote an
+association to strict evidence, erase the historical inclusion fact, or establish
+present functional behavior.
 
 A shallow repository can support an explicitly bounded range only when none of
 that range's enumerated objects is a shallow boundary. A negative original
@@ -111,12 +114,37 @@ Evidence keys bind the repository URL, candidate, target side/source identity,
 rule/method version, and analysis range; batches separately bind the collection.
 Oldest-attempt scheduling prevents permanent failures from starving unseen work.
 
+Strict evidence saves `strict_manifest` on each analyzed side (method version 2,
+manifest version 1). `candidate` and each item in `matches` carry their commit
+`oid`, `parent_oid`, and `files`. Each file stores canonical `path_b64` (base64 of
+the original Git path bytes) and `before`/`after` states with `mode`, `blob_oid`
+and complete raw-content `sha256`. Mode `000000` and null object/digest mean an
+absent file; an empty file has a normal blob OID and SHA-256 of zero bytes. Both
+sides' file lists must agree; no source text is persisted. Paths are not decoded
+lossily for comparison or storage.
+
+One manifest is limited to 256 total file records across the candidate and all
+matches, 4096 raw bytes per path and 65536 UTF-8 bytes of compact JSON. These
+fixed limits supplement Git output and batch byte budgets. Exceeding any limit
+returns `unknown` / `strict_manifest_limit` with incomplete coverage and no
+manifest, never a strict confirmation with a truncated or silently missing audit.
+A failed refresh may retain an already complete same-identity manifest with its
+original successful time, retained marker and explicit failure reason.
+
 Defaults bound fetching depth, object enumeration, subprocess time/output,
 repository disk and saved metadata, rule input/output, public candidate count
 and batch bytes. The public subset is at most 1000 candidates, even when the
 scan has more matches. Counts and facets cover that subset, not all Git history.
 Truncation, incomplete matching and incomplete analysis remain explicit.
 Do not increase limits without measuring the repository and the host budget.
+
+The default rule worker budget is one second for the entire isolated process,
+including startup and IPC, not just regex matching. Parent-only subprocess,
+selector and typing imports stay outside the child startup path; the child loads
+Git-path glob support only for path rules. This reduces startup work without
+changing the deadline, rule semantics, output bounds, or worker kill/reap behavior.
+Cold interpreter startup still counts against the configured budget, including on
+emulated hosts; report a timeout as a failure rather than silently extending it.
 
 Each target side retains only same-identity evidence after a failed refresh,
 with its original time and a retained marker. New candidates remain pending;
@@ -134,11 +162,20 @@ facet, not once per matching commit. Existing GET unions/intersections apply.
 
 `/api/v2/packages/NAME/commits` returns the published subset with `status`,
 `rule`, `per_page` (1..50) and `cursor`. The cursor binds the exact saved batch,
-filter signature and stable OID ordering. A replaced batch or filter
+filter signature and stable OID ordering. The response also includes `repository`
+and the same `check` as the package summary: `configured`, status, stale marker,
+successful `checked_at`, latest `attempted_at`, error and analysis failures. An
+empty page with `error`, `pending` or `not_configured` is not a successful
+zero-findings result. Initial repository/package failures remain visible even
+before an active batch exists; later failures retain the old batch and its
+successful observation time. `input_changed` and `expired` remain explicit. A replaced batch or filter
 mismatch returns 422 with a refresh instruction; restart from page one.
 `/api/ui/packages/NAME/commits` returns the equivalent shared document section;
 `/packages/NAME/commits` is a thin Astro history page. The normal package detail
 shows current/upgrade evidence, targets, observation times and revert clues.
+Summary and history documents show collection/configuration status, errors and
+attempt times, plus a bounded preview of saved strict verification; the fact API
+exposes the complete typed manifest.
 Summary and history both mark stale input or failed refreshes, without relabeling
 old facts as a new success. Upstream commit time and collection time differ.
 
@@ -146,7 +183,12 @@ old facts as a new success. Upstream commit time and collection time differ.
 
 Storage format 4 adds phase-owned keyed collections for commit records, scan
 manifests, evidence entries, and package batches/rule progress. Public snapshot
-schema remains 1. Only the `commits` phase owns these fields and its prefixed
+schema remains 1. Strict manifests are additive JSON fields inside the existing
+format-4 evidence/batch rows, so this change needs no storage migration. Old
+snapshots without `strict_manifest` still deserialize (the API returns null), but
+method-version-1 batches are `input_changed` and cannot be reused as current
+method-version-2 evidence. Evidence keys include the method version; an old
+manifest or failure retention cannot cross that identity boundary. Only the `commits` phase owns these fields and its prefixed
 components. Fetch/analysis happens outside the database write transaction;
 publication rechecks configuration, source, upstream identity and targets.
 Repository locks are released before the snapshot writer lock is acquired.
@@ -184,21 +226,53 @@ Passing local synthetic/SQLite/SSR tests is not full native acceptance.
 
 ## Fixed real-case replay
 
-`backend/tests/fixtures/commits-real-cases.json` contains 26 fixed QEMU/LLVM
-commit-target cases in 11 modification groups. Fifteen development cases and
-eleven independent cases use disjoint groups. Independent non-RISC-V QEMU
-controls evaluate inclusion methods, not discovery recall. The bounded LLVM
-release window includes a RISC-V path change whose title lacks that token.
-Raw commit trailers, ancestor checks, and independent complete before/after
-file-byte comparisons document annotations; the analyzer does not generate
-the expected states. This small corpus is not an accuracy claim for all upstreams.
+`backend/tests/fixtures/commits-real-cases.json` contains 31 fixed QEMU/LLVM
+commit-target cases in 12 modification groups. Eighteen development cases and
+thirteen independent cases use disjoint groups. QEMU supplies 25 cases; LLVM
+supplies six. Twelve negative cases inspect nonempty target windows.
+Independent non-RISC-V controls evaluate inclusion methods, not discovery recall.
+The bounded LLVM window includes a path change whose title lacks the RISC-V token.
 
-Prepare the declared objects and parents in isolated bare caches, then run
-`python3 scripts/check-commit-cases.py --cache-root DATA --output NEW-REPORT.json`.
-The command is offline, never fetches, does not modify the caches, refuses to
-overwrite a report, and records per-case state/coverage/runtime. Missing objects
-produce unknown results, not a fabricated pass. Ordinary pytest validates the
-manifest structure and group isolation without network access.
+Raw Git trailers, ancestry, and complete file-byte manifests freeze technical
+expectations independently of the analyzer. These are machine-verifiable method
+labels, not human semantic review or a recall claim for all upstreams.
+
+Prepare the declared objects and parents in isolated bare caches, then run:
+
+```sh
+python3 scripts/check-commit-cases.py --cache-root DATA --output NEW-REPORT.json
+(cd backend && python3 -m pytest -q tests/monitors/commits/test_acceptance_runner.py tests/monitors/commits/test_real_manifest.py)
+python3 scripts/commit_acceptance.py --cache-root DATA --work-root WORK --output NEW-ACCEPTANCE.json --repeats 5
+```
+
+The offline replay never fetches or modifies its input caches. It refuses to
+overwrite reports. Assertions cover status, reason, matches, reverts, coverage,
+identity, and strict manifests, not only the five-state label. Reports record
+source fingerprints, method versions, commands, and environment details. Missing
+objects fail the declared expectations; they do not fabricate a pass.
+
+The acceptance runner compares incremental and full results, including an added
+history segment. Separate processes restart after four controlled publication
+boundaries. Constructed-fixture assertions independently verify exact candidate
+OIDs, counts, target identity, and historical states. Empty matcher output cannot
+pass by agreeing with another empty recomputation. Strict manifests compare raw
+path identities independently of JSON array ordering. Technical-label confusion
+matrices participate in acceptance; human semantic labels remain separate.
+Performance covers first scan, unchanged polling, appended history, and rule
+replay. Each cold/hot application-cache combination has at least five
+independent samples. Reports include timing ranges, Git calls, object reads,
+RSS, disk deltas, and failures. The runner never clears operating-system caches;
+application-cold is not cold physical storage or a production throughput claim.
+
+Complete-window technical labels include every declared commit. Human relevance
+review remains explicit and incomplete until a reviewer supplies it. Do not
+report semantic precision or recall from unreviewed machine labels. To regenerate
+raw technical expectations for a separate review artifact, use
+`scripts/annotate-commit-cases.py`; never generate expected states with the analyzer.
+Ordinary backend pytest discovers the acceptance-runner regressions alongside the
+manifest structure and group-isolation tests; no separate scripts test entry is
+required. Script imports use temporary module/path contexts, and all fixtures are
+offline. The selector above covers both without rerunning the full native suite.
 
 ## QEMU and LLVM opt-in examples
 

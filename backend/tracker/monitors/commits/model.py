@@ -1,7 +1,10 @@
 """Validated policy and immutable identities for commit collection."""
+import base64
+import binascii
 import hashlib
 import json
 import re
+from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -10,7 +13,11 @@ from tracker.monitors.schedule import Schedule
 
 STATUSES = ('original_reachable', 'strict_patch_evidence', 'backport_needs_review',
             'no_evidence_in_range', 'unknown')
-METHOD_VERSION = 1
+METHOD_VERSION = 2
+STRICT_MANIFEST_VERSION = 1
+STRICT_FILE_LIMIT = 256
+STRICT_PATH_BYTES = 4096
+STRICT_MANIFEST_BYTES = 65536
 
 
 def digest(value):
@@ -40,6 +47,63 @@ def https_url(value):
 
 class Policy(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
+
+
+class StrictFileState(Policy):
+    mode: Literal['000000', '100644', '100755']
+    blob_oid: str | None
+    sha256: str | None = Field(pattern=r'^[a-f0-9]{64}$')
+
+    @field_validator('blob_oid')
+    @classmethod
+    def valid_blob_oid(_cls, value):
+        return complete_oid(value) if value is not None else None
+
+    @model_validator(mode='after')
+    def consistent_presence(self):
+        missing = self.mode == '000000'
+        if (self.blob_oid is None) != missing or (self.sha256 is None) != missing:
+            raise ValueError('absent files require null object and content digest')
+        return self
+
+
+class StrictFile(Policy):
+    path_b64: str = Field(min_length=4, max_length=4 * ((STRICT_PATH_BYTES + 2) // 3))
+    before: StrictFileState
+    after: StrictFileState
+
+    @field_validator('path_b64')
+    @classmethod
+    def raw_path(_cls, value):
+        try:
+            raw = base64.b64decode(value, validate=True)
+        except (ValueError, binascii.Error) as error:
+            raise ValueError('path must be canonical base64') from error
+        if (not raw or len(raw) > STRICT_PATH_BYTES or b'\x00' in raw
+                or base64.b64encode(raw).decode('ascii') != value):
+            raise ValueError('path must losslessly encode a bounded raw Git path')
+        return value
+
+
+class StrictChange(Policy):
+    oid: str
+    parent_oid: str
+    files: list[StrictFile] = Field(min_length=1, max_length=STRICT_FILE_LIMIT)
+
+    _oids = field_validator('oid', 'parent_oid')(complete_oid)
+
+
+class StrictManifest(Policy):
+    version: Literal[1] = STRICT_MANIFEST_VERSION
+    candidate: StrictChange
+    matches: list[StrictChange] = Field(min_length=1, max_length=STRICT_FILE_LIMIT)
+
+    @model_validator(mode='after')
+    def bounded_manifest(self):
+        if (sum(len(change.files) for change in [self.candidate, *self.matches]) > STRICT_FILE_LIMIT
+                or len(self.model_dump_json().encode()) > STRICT_MANIFEST_BYTES):
+            raise ValueError('strict verification manifest budget exceeded')
+        return self
 
 
 class Rule(Policy):

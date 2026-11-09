@@ -61,3 +61,35 @@ def test_real_opt_in_examples_validate_without_inventing_source_mappings():
     result = package_policies({**distribution, 'packages': packages})
     assert set(result) == {'qemu', 'llvm22'}
     assert all(not policy.mappings for policy in result.values())
+
+
+def test_method_version_changes_evidence_identity(monkeypatch):
+    from tracker.monitors.commits import model
+
+    target = dict(side='current', oid='b' * 40, revision='r')
+    current = model.evidence_key('repo', OID, target, 'rules', {'start': None})
+    assert model.METHOD_VERSION == 2
+    monkeypatch.setattr(model, 'METHOD_VERSION', 1)
+    assert current != model.evidence_key('repo', OID, target, 'rules', {'start': None})
+
+
+@pytest.mark.parametrize('value', [
+    {'mode': '000000', 'blob_oid': OID, 'sha256': 'b' * 64},
+    {'mode': '100644', 'blob_oid': None, 'sha256': None},
+    {'mode': '100644', 'blob_oid': 'short', 'sha256': 'b' * 64},
+    {'mode': '120000', 'blob_oid': OID, 'sha256': 'b' * 64},
+])
+def test_strict_file_presence_and_shape_are_typed(value):
+    from tracker.monitors.commits.model import StrictFileState
+
+    with pytest.raises(ValidationError):
+        StrictFileState.model_validate(value)
+
+
+@pytest.mark.parametrize('path', ['not base64!', 'AA==', 'Zg===', 'Zh=='])
+def test_strict_file_path_is_lossless_canonical_base64(path):
+    from tracker.monitors.commits.model import StrictFile
+
+    with pytest.raises(ValidationError):
+        StrictFile(path_b64=path, before=dict(mode='000000', blob_oid=None, sha256=None),
+                   after=dict(mode='100644', blob_oid=OID, sha256='b' * 64))

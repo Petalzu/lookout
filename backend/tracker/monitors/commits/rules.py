@@ -2,20 +2,16 @@
 
 from __future__ import annotations
 
-import glob
 import json
-import math
-import os
 import re
-import selectors
-import subprocess
 import sys
-import time
 import unicodedata
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from tracker.monitors.commits.model import Rule
+if __name__ != "__main__":
+    from typing import TYPE_CHECKING
+
+    if TYPE_CHECKING:
+        from tracker.monitors.commits.model import Rule
 
 _INPUT_LIMIT = 2 * 1024 * 1024
 _OUTPUT_LIMIT = 1024 * 1024
@@ -153,8 +149,12 @@ def _evaluate(payload):
             patterns = [re.compile(pattern, flags) for pattern in rule["patterns"]]
         except (re.PatternError, RecursionError, OverflowError):
             raise RuleError("invalid_regex") from None
-        paths = [re.compile(glob.translate(pattern, recursive=True, include_hidden=True, seps="/"))
-                 for pattern in rule["paths"]]
+        paths = []
+        if rule["paths"]:
+            import glob
+
+            paths = [re.compile(glob.translate(pattern, recursive=True, include_hidden=True, seps="/"))
+                     for pattern in rule["paths"]]
         compiled.append((rule, patterns, paths))
 
     result = []
@@ -218,7 +218,12 @@ def _worker_main():
     sys.stdout.buffer.write(output)
 
 
-def _exchange(process: subprocess.Popen[bytes], raw: bytes, deadline: float) -> bytearray:
+def _exchange(process, raw: bytes, deadline: float) -> bytearray:
+    import os
+    import selectors
+    import subprocess
+    import time
+
     stdin, stdout = process.stdin, process.stdout
     if stdin is None or stdout is None:
         raise RuleError("worker_error")
@@ -266,6 +271,10 @@ def _exchange(process: subprocess.Popen[bytes], raw: bytes, deadline: float) -> 
 
 
 def _run_worker(raw, timeout_seconds):
+    import os
+    import subprocess
+    import time
+
     deadline = time.monotonic() + timeout_seconds
     try:
         process = subprocess.Popen(
@@ -323,6 +332,8 @@ def match_rules(commit: dict, rules: list[Rule], *, timeout_seconds=1, text_limi
     Every regex is compiled before any match-based short circuit, inside the worker.
     RuleError.code is one of _ERROR_CODES; the message never contains input data.
     """
+    import math
+
     if (type(timeout_seconds) not in (int, float) or not 0 < timeout_seconds <= 10
             or not math.isfinite(timeout_seconds) or type(text_limit) is not int or not 1 <= text_limit <= 1048576):
         raise RuleError("invalid_budget")

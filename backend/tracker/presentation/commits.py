@@ -20,6 +20,7 @@ REASONS = {
     'commit_limit': 'Target-history budget reached',
     'tag_drift': 'Release tag disagrees with the reviewed object',
     'unsupported_commit_shape': 'Outside the strict method support',
+    'strict_manifest_limit': 'Strict verification manifest budget reached; equivalence not confirmed',
 }
 
 
@@ -29,6 +30,36 @@ def cells(_pkg, result, _links):
                         [text({'ok': 'Checked', 'partial': 'Partial', 'error': 'Refresh failed'}.get(
                             result['check']['status'], result['check']['status'].replace('_', ' ').title()),
                             tone='notice' if result['check']['stale'] else 'muted')]])]
+
+
+def _check_fields(check):
+    fields = [field('Collection', text(check['status'].replace('_', ' ').title(),
+                                      tone='notice' if check.get('stale') else 'muted')),
+              field('Configuration', text('Configured' if check.get('configured') else 'Not configured'))]
+    if check.get('error'):
+        fields.append(field('Refresh error', text(check['error'], kind='code', tone='notice')))
+    fields.extend(field('Analysis failure', text(failure, kind='code', tone='notice'))
+                  for failure in check.get('failures', []))
+    if check.get('checked_at'):
+        fields.append(field('Observed', stamp(check['checked_at'])))
+    if check.get('attempted_at'):
+        fields.append(field('Last attempt', stamp(check['attempted_at'])))
+    return fields
+
+
+def _manifest_fields(manifest):
+    changes = [manifest['candidate'], *manifest['matches']]
+    fields = [field('Strict verification', text(f"Saved manifest v{manifest['version']}; "
+        f"{sum(len(change['files']) for change in changes)} file records. "
+        'Complete raw-path, mode and content-digest audit is available in the commit fact API.'))]
+    for change in changes[:2]:
+        fields.append(field('Verified change', text(change['parent_oid'] + ' → ' + change['oid'], kind='code')))
+        for item in change['files'][:2]:
+            states = [item['before'], item['after']]
+            description = ' → '.join(value['mode'] + ': ' + (value['sha256'] or 'absent') for value in states)
+            fields.append(field('Raw path (base64)', text(item['path_b64'], kind='code')))
+            fields.append(field('File SHA-256', text(description, kind='code')))
+    return fields
 
 
 def sections(result, _links):
@@ -64,6 +95,8 @@ def sections(result, _links):
                 base = item['url'].rsplit('/commit/', 1)[0]
                 fields.append(field('Evidence commits',
                     *[text(value, kind='code', href=base + '/commit/' + value) for value in evidence['matches']]))
+            if evidence.get('strict_manifest'):
+                fields.extend(_manifest_fields(evidence['strict_manifest']))
             coverage = evidence.get('coverage', {})
             if coverage.get('start'):
                 fields.append(field('Checked history', text(coverage['start'][:12] + ' … ' +
@@ -77,14 +110,14 @@ def sections(result, _links):
         entries.append(Entry(heading=[text(item['subject'], href=item['url'])],
                              metadata=[text(item['oid'][:12], kind='code'), stamp(item.get('committed_at'))], fields=fields))
     return [Section(id='commits', title=f"Upstream commits · {data['selected']} / {data['total']}",
-                    fields=[field('Scope', text('Published candidate subset; not a functional fix assessment.')),
+                    fields=[*_check_fields(result['check']), field('Scope', text('Published candidate subset; not a functional fix assessment.')),
                             field('Coverage', text('Complete declared window' if data.get('coverage', {}).get('complete')
                                   else 'Partial or bounded evidence; inspect the fact API for exact ranges.', tone='muted'))],
                     entries=entries, more=data.get('history_url') if len(data['entries']) > 20 else None)]
 
 
 def history_section(name, page, *, status=None, rule=None):
-    rendered = sections({'data': {'entries': page['items'], 'selected': len(page['items']),
+    rendered = sections({'check': page['check'], 'data': {'entries': page['items'], 'selected': len(page['items']),
                                  'total': page['total'], 'coverage': page.get('coverage', {})}}, None)[0]
     if page['next_cursor']:
         params = {'cursor': page['next_cursor']}

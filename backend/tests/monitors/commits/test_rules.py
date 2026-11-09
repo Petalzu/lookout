@@ -1,6 +1,8 @@
 import inspect
+import json
 import os
 import signal
+import subprocess
 import sys
 import time
 import unicodedata
@@ -55,7 +57,7 @@ def _error(code, data, rules, **kwargs):
 
 @pytest.fixture
 def workers(monkeypatch):
-    original = matcher.subprocess.Popen
+    original = subprocess.Popen
     started = []
 
     def record(*args, **kwargs):
@@ -64,7 +66,7 @@ def workers(monkeypatch):
         started.append(process)
         return process
 
-    monkeypatch.setattr(matcher.subprocess, "Popen", record)
+    monkeypatch.setattr(subprocess, "Popen", record)
     yield started
     leaked = []
     for process in started:
@@ -280,25 +282,25 @@ def test_worker_reason_output_limit_is_an_error_not_an_empty_result(workers):
 
 
 def test_parent_caps_stdout_and_kills_noisy_worker(monkeypatch, workers):
-    recorded = matcher.subprocess.Popen
+    recorded = subprocess.Popen
 
     def noisy_worker(args, **kwargs):
         script = f"import os, time; os.write(1, b'x' * {matcher._OUTPUT_LIMIT + 1}); time.sleep(5)"
         return recorded([sys.executable, "-I", "-B", "-c", script], **kwargs)
 
-    monkeypatch.setattr(matcher.subprocess, "Popen", noisy_worker)
+    monkeypatch.setattr(subprocess, "Popen", noisy_worker)
     _error("output_limit", _commit("fix"), [Rule(id="One", patterns=["fix"])])
     assert workers[0].kill.called
     _reaped(workers[0])
 
 
 def test_worker_failure_is_safe_and_reaped(monkeypatch, workers):
-    recorded = matcher.subprocess.Popen
+    recorded = subprocess.Popen
 
     def broken_worker(args, **kwargs):
         return recorded([sys.executable, "-I", "-B", "-c", "raise SystemExit(2)"], **kwargs)
 
-    monkeypatch.setattr(matcher.subprocess, "Popen", broken_worker)
+    monkeypatch.setattr(subprocess, "Popen", broken_worker)
     _error("worker_error", _commit("fix"), [Rule(id="One", keywords=["fix"])])
     _reaped(workers[0])
 
@@ -325,12 +327,12 @@ def test_duplicate_ids_and_container_type_are_invalid():
 
 @pytest.mark.parametrize("stdout", ["not json", '{"matches":[{"rule":"injected"}]}', '{"error":"private details"}'])
 def test_malformed_worker_protocol_never_returns_untrusted_reasons(monkeypatch, workers, stdout):
-    recorded = matcher.subprocess.Popen
+    recorded = subprocess.Popen
 
     def malformed_worker(args, **kwargs):
         return recorded([sys.executable, "-I", "-B", "-c", f"print({stdout!r})"], **kwargs)
 
-    monkeypatch.setattr(matcher.subprocess, "Popen", malformed_worker)
+    monkeypatch.setattr(subprocess, "Popen", malformed_worker)
     _error("worker_error", _commit("fix"), [Rule(id="One", keywords=["fix"])])
     _reaped(workers[0])
 
@@ -339,7 +341,7 @@ def test_worker_start_failure_uses_safe_code(monkeypatch):
     def cannot_start(*args, **kwargs):
         raise OSError("private interpreter location")
 
-    monkeypatch.setattr(matcher.subprocess, "Popen", cannot_start)
+    monkeypatch.setattr(subprocess, "Popen", cannot_start)
     _error("worker_error", _commit("fix"), [Rule(id="One", keywords=["fix"])])
 
 
@@ -348,3 +350,20 @@ def test_matching_exclusion_precedes_positive_reason_output_budget():
     paths = [f"src/{index:04}-" + "p" * 600 for index in range(1500)]
     rules = [Rule(id="Many", paths=["src/**"]), Rule(id="Drop", keywords=["skip"], exclude=True)]
     assert match_rules(_commit("skip", paths=paths), rules) == []
+
+
+@pytest.mark.parametrize('with_paths', [False, True])
+def test_worker_startup_does_not_import_parent_only_dependencies(with_paths):
+    rule = Rule(id='Lean', keywords=['riscv'], paths=['target/riscv/**'] if with_paths else [])
+    raw = json.dumps({'commit': _commit('riscv fix', paths=['target/riscv/cpu.c']),
+                      'rules': [rule.model_dump()]}).encode()
+    result = subprocess.run([sys.executable, '-I', '-B', '-X', 'importtime', matcher.__file__],
+                                   input=raw, capture_output=True, check=True, timeout=1)
+    expected = [_reason('Lean', 'subject', 'riscv')]
+    if with_paths:
+        expected.append(_reason('Lean', 'path', 'target/riscv/cpu.c', 'target/riscv/cpu.c'))
+    assert json.loads(result.stdout) == {'matches': expected}
+    imported = {line.rsplit('|', 1)[-1].strip() for line in result.stderr.decode().splitlines()
+                if line.startswith('import time:')}
+    assert not imported.intersection({'subprocess', 'selectors', 'typing', 'pydantic'})
+    assert ('glob' in imported) == with_paths

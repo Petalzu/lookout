@@ -8,6 +8,15 @@ from tracker.monitors.commits.git import Repository
 from tracker.monitors.commits.model import settings
 from tracker.monitors.commits.scan import advance
 
+STAMP = '2026-11-06T10:00:00+00:00'
+NEXT = '2026-11-08T10:00:00+00:00'
+
+
+@pytest.fixture(autouse=True)
+def fixed_git_clock(monkeypatch):
+    monkeypatch.setenv('GIT_AUTHOR_DATE', STAMP)
+    monkeypatch.setenv('GIT_COMMITTER_DATE', STAMP)
+
 
 def git(path, *args):
     return subprocess.check_output(['git', '-c', f'safe.directory={path}', '-C', str(path), *args],
@@ -222,7 +231,18 @@ def test_initial_fetch_failure_is_visible_as_error_not_unconfigured(package, mon
     with ProjectedClient(create_app(db)) as client:
         response = client.get('/api/v2/packages/binutils?include=commits')
         assert response.status_code == 200, response.text
-        assert response.json()['monitors']['commits']['check']['status'] == 'error'
+        summary = response.json()['monitors']['commits']['check']
+        assert summary['status'] == 'error' and summary['error'] == 'timeout'
+        history = client.get('/api/v2/packages/binutils/commits')
+        assert history.status_code == 200, history.text
+        assert history.json()['check'] == summary
+        assert history.json()['repository'] == 'fixture'
+        assert summary['configured'] and summary['checked_at'] is None
+        assert history.json()['items'] == []
+        document = client.get('/api/ui/packages/binutils/commits')
+        assert document.status_code == 200, document.text
+        assert 'timeout' in document.text and 'Last attempt' in document.text
+        assert 'Configured' in document.text
 
 
 def test_upstream_identity_change_is_rejected_during_publication(package, monkeypatch):
@@ -382,3 +402,226 @@ def test_changed_collection_budget_invalidates_an_in_flight_batch(package, monke
     current = collector.input_key(config, state.read(db), 'binutils',
         collector.package_policies(config)['binutils'], collector.settings(config).repositories['fixture'])
     assert previous != current
+
+
+@pytest.fixture
+def strict_package(package):
+    config, db, repo, base, fix = package
+    git(repo.path, 'checkout', '-qb', 'backport', base)
+    (repo.path / 'other').write_text('unrelated context\n')
+    git(repo.path, 'add', '.')
+    git(repo.path, 'commit', '-qm', 'context')
+    git(repo.path, 'cherry-pick', fix)
+    target = git(repo.path, 'rev-parse', 'HEAD')
+    git(repo.path, 'checkout', 'main')
+    config['packages']['binutils']['monitors']['commits']['mappings']['3.9.0']['oid'] = target
+    return config, db, repo, base, fix
+
+
+def test_strict_manifest_round_trips_storage_api_and_document(strict_package):
+    from tests.conftest import ProjectedClient
+    from tracker.api import create_app
+
+    config, db, repo, _, fix = strict_package
+    result = collect(config, db, repositories={'fixture': repo})
+    batch = result['commits_batches']['binutils']['active']
+    side = batch['entries'][0]['sides']['current']
+    manifest = side['strict_manifest']
+    assert batch['method_version'] == 2
+    assert side['status'] == 'strict_patch_evidence' and manifest['candidate']['oid'] == fix
+    assert manifest['matches'][0]['oid'] == side['target']['oid']
+    saved = state.read(db)
+    assert saved['commits_evidence']['binutils'][side['key']]['strict_manifest'] == manifest
+    assert saved['commits_batches']['binutils']['active']['entries'][0]['sides']['current']['strict_manifest'] == manifest
+    with ProjectedClient(create_app(db)) as client:
+        summary = client.get('/api/v2/packages/binutils?include=commits').json()['monitors']['commits']
+        history = client.get('/api/v2/packages/binutils/commits').json()
+        assert summary['data']['entries'][0]['sides']['current']['strict_manifest'] == manifest
+        assert history['items'][0]['sides']['current']['strict_manifest'] == manifest
+        for url in ('/api/ui/packages/binutils', '/api/ui/packages/binutils/commits'):
+            response = client.get(url)
+            assert response.status_code == 200, response.text
+            assert 'Saved manifest v1' in response.text
+            assert manifest['candidate']['parent_oid'] in response.text
+            assert manifest['candidate']['files'][0]['after']['sha256'] in response.text
+
+
+def test_strict_manifest_failure_retention_and_target_identity(strict_package, monkeypatch):
+    from tracker.monitors.commits import collector
+
+    config, db, repo, _, fix = strict_package
+    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    saved = first['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    monkeypatch.setattr(collector, 'analyze', lambda *args, **kwargs: dict(status='unknown', reason='timeout',
+        matches=[], reverts=[], strict_manifest=None, coverage={'complete': False}))
+    failed = collect(config, db, repositories={'fixture': repo}, now=NEXT)
+    retained = failed['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    assert retained['retained'] and retained['error'] == 'timeout'
+    assert retained['checked_at'] == saved['checked_at'] == STAMP
+    assert retained['strict_manifest'] == saved['strict_manifest']
+    config['packages']['binutils']['monitors']['commits']['mappings']['3.9.0']['oid'] = fix
+    changed = collect(config, db, repositories={'fixture': repo}, now='2026-11-08T10:01:00+00:00')
+    current = changed['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    assert not current.get('retained') and current['checked_at'] is None
+    assert current['strict_manifest'] is None
+
+
+def test_old_method_manifest_is_readable_but_not_reused(package, monkeypatch):
+    from tests.conftest import ProjectedClient
+    from tracker.api import create_app
+    from tracker.monitors.commits import collector, model
+    from tracker.readmodel.commits import page
+
+    config, db, repo, _, _ = package
+    monkeypatch.setattr(collector, 'METHOD_VERSION', 1)
+    monkeypatch.setattr(model, 'METHOD_VERSION', 1)
+    old = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    side = old['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    side.pop('strict_manifest', None)
+    state.commit(db, old)
+    assert page(old, 'binutils')['check']['status'] == 'input_changed'
+    with ProjectedClient(create_app(db)) as client:
+        response = client.get('/api/v2/packages/binutils/commits')
+        assert response.status_code == 200, response.text
+        assert response.json()['items'][0]['sides']['current']['strict_manifest'] is None
+    monkeypatch.setattr(collector, 'METHOD_VERSION', 2)
+    monkeypatch.setattr(model, 'METHOD_VERSION', 2)
+    monkeypatch.setattr(collector, 'analyze', lambda *args, **kwargs: dict(status='unknown', reason='timeout',
+        matches=[], reverts=[], strict_manifest=None, coverage={'complete': False}))
+    new = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:01:00+00:00')
+    current = new['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    assert not current.get('retained') and current['checked_at'] is None
+    assert current['key'] != side['key']
+
+
+@pytest.mark.parametrize('condition', ['not_configured', 'pending', 'repo_error', 'package_error'])
+def test_history_without_batch_shares_summary_check_and_attempt(package, condition):
+    from datetime import datetime
+    from types import SimpleNamespace
+
+    from tracker.monitors.version.compare import evaluate
+    from tracker.presentation.commits import history_section
+    from tracker.readmodel import commits
+
+    _, db, _, _, _ = package
+    snapshot = state.read(db)
+    now = datetime.fromisoformat(STAMP)
+    if condition != 'not_configured':
+        snapshot['commits_batches'] = {'binutils': {'policy': {'repository': 'fixture'}}}
+    if condition.endswith('_error'):
+        key = 'commits:fixture' if condition == 'repo_error' else 'commits:package:binutils'
+        snapshot['components'][key] = dict(error='timeout', attempted_at=STAMP)
+    version = evaluate(snapshot, 'binutils', now)
+    summary = commits.project(SimpleNamespace(snapshot=snapshot, name='binutils', version=version, now=now))
+    page = commits.page(snapshot, 'binutils', now=now)
+    assert page['check'] == summary['check']
+    assert page['check']['status'] == ('error' if condition.endswith('_error') else condition)
+    assert page['check']['configured'] == (condition != 'not_configured')
+    assert page['check']['checked_at'] is None
+    assert page['check']['attempted_at'] == (STAMP if condition.endswith('_error') else None)
+    assert not page['items'] and page['batch_id'] is None
+    rendered = history_section('binutils', page).model_dump_json()
+    if condition.endswith('_error'):
+        assert 'timeout' in rendered and 'Last attempt' in rendered
+    with pytest.raises(ValueError, match='refresh the first page'):
+        commits.page(snapshot, 'binutils', cursor='old-cursor', now=now)
+
+
+@pytest.mark.parametrize('condition', ['ok', 'error', 'expired', 'input_changed'])
+def test_history_with_batch_shares_summary_check_times_and_staleness(package, condition, monkeypatch):
+    from datetime import datetime, timedelta
+    from types import SimpleNamespace
+
+    from tracker.monitors.version import compare as versions
+    from tracker.presentation.commits import history_section
+    from tracker.readmodel import commits
+
+    config, db, repo, _, _ = package
+    observed = datetime.fromisoformat(STAMP)
+
+    class CollectionClock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return observed.astimezone(tz) if tz else observed.replace(tzinfo=None)
+
+    monkeypatch.setattr(versions, 'datetime', CollectionClock)
+    seeded = state.read(db)
+    seeded['specs']['binutils'].update(fetched_at=STAMP, attempted_at=STAMP)
+    seeded['tracks']['binutils'].update(version='3.9.0', fetched_at=STAMP, attempted_at=STAMP)
+    state.commit(db, seeded)
+    # Expire commit evidence while source/upstream facts and release eligibility stay fixed.
+    config['commits']['stale_after_seconds'] = 7200
+    snapshot = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    assert snapshot['commits_batches']['binutils']['active']['target_version'] is None
+    if condition == 'error':
+        snapshot['components']['commits:fixture'].update(error='timeout', attempted_at=NEXT)
+    elif condition == 'input_changed':
+        snapshot['specs']['binutils']['metadata']['sources'][0]['url'] = 'https://example.org/changed.tar.xz'
+    now = observed + timedelta(seconds=7201) if condition == 'expired' else observed
+    version = versions.evaluate(snapshot, 'binutils', now)
+    assert not version.upgrading and not version.upstream_stale
+    summary = commits.project(SimpleNamespace(snapshot=snapshot, name='binutils', version=version, now=now))
+    page = commits.page(snapshot, 'binutils', now=now)
+    assert page['check'] == summary['check']
+    assert page['check']['status'] == condition
+    assert page['check']['checked_at'] == STAMP
+    assert page['check']['attempted_at'] == (NEXT if condition == 'error' else STAMP)
+    assert page['check']['configured']
+    assert page['check']['stale'] == (condition != 'ok')
+    assert all(item['stale'] == (condition != 'ok') for item in page['items'])
+    rendered = history_section('binutils', page).model_dump_json()
+    assert condition.replace('_', ' ').title() in rendered
+    if condition == 'error':
+        assert 'timeout' in rendered
+
+
+def test_retained_batch_history_api_keeps_observed_time_and_latest_failure(package, monkeypatch):
+    from tests.conftest import ProjectedClient
+    from tracker.api import create_app
+    from tracker.monitors.commits.git import GitError
+
+    config, db, repo, _, _ = package
+    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    monkeypatch.setattr(repo, 'resolve', lambda ref: (_ for _ in ()).throw(GitError('timeout')))
+    failed = collect(config, db, repositories={'fixture': repo}, now=NEXT)
+    assert failed['commits_batches']['binutils']['active'] == first['commits_batches']['binutils']['active']
+    with ProjectedClient(create_app(db)) as client:
+        summary = client.get('/api/v2/packages/binutils?include=commits').json()['monitors']['commits']
+        history = client.get('/api/v2/packages/binutils/commits').json()
+        assert history['check'] == summary['check']
+        assert history['check']['status'] == 'error' and history['check']['error'] == 'timeout'
+        assert history['check']['checked_at'] == STAMP and history['check']['attempted_at'] == NEXT
+        assert history['items'] and all(item['stale'] for item in history['items'])
+        response = client.get('/api/ui/packages/binutils/commits')
+        assert response.status_code == 200, response.text
+        assert 'timeout' in response.text and 'Last attempt' in response.text
+
+
+def test_batch_byte_limit_never_splits_or_drops_a_published_strict_manifest(package):
+    config, db, repo, base, _ = package
+    git(repo.path, 'reset', '--hard', base)
+    for index in range(30):
+        (repo.path / f'file-{index}').write_text('complete raw content\n')
+    git(repo.path, 'add', '.')
+    git(repo.path, 'commit', '-qm', 'riscv: many files')
+    candidate = git(repo.path, 'rev-parse', 'HEAD')
+    git(repo.path, 'checkout', '-qb', 'backport', base)
+    (repo.path / 'context').write_text('parent context\n')
+    git(repo.path, 'add', '.')
+    git(repo.path, 'commit', '-qm', 'context')
+    git(repo.path, 'cherry-pick', candidate)
+    target = git(repo.path, 'rev-parse', 'HEAD')
+    git(repo.path, 'checkout', 'main')
+    config['commits']['max_batch_bytes'] = 16384
+    config['packages']['binutils']['monitors']['commits']['mappings']['3.9.0']['oid'] = target
+    limited = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    batch = limited['commits_batches']['binutils']['active']
+    assert batch['status'] == 'partial' and batch['coverage']['truncated']
+    assert batch['selected'] == 0 and batch['total'] == 1
+    proof = next(iter(limited['commits_evidence']['binutils'].values()))['strict_manifest']
+    assert len(proof['candidate']['files']) == 30 and len(proof['matches'][0]['files']) == 30
+    config['commits']['max_batch_bytes'] = 65536
+    published = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:01:00+00:00')
+    batch = published['commits_batches']['binutils']['active']
+    assert batch['selected'] == batch['total'] == 1
+    assert batch['entries'][0]['sides']['current']['strict_manifest'] == proof

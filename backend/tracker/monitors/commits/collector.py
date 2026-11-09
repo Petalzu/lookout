@@ -134,7 +134,7 @@ def _checked(repo, repository, candidate, target, observed_at, at, saved):
         result = dict(analyze(repo, candidate, target['oid'], history_limit=repository.history_limit,
                               history_start=repository.analysis_start))
     except GitError as error:
-        result = dict(status='unknown', reason=error.code, matches=[], reverts=[], coverage={'complete': False})
+        result = dict(status='unknown', reason=error.code, matches=[], reverts=[], strict_manifest=None, coverage={'complete': False})
     succeeded = result['coverage'].get('complete') or result['status'] in (
         'original_reachable', 'strict_patch_evidence')
     result.update(checked_at=observed_at if succeeded else None)
@@ -146,7 +146,7 @@ def _checked(repo, repository, candidate, target, observed_at, at, saved):
 def _side(side, target, upgrading, candidate, key, saved, scheduled, repo, repository, options, scan, at, evidence):
     if target is None:
         reason = 'no_candidate_release' if side == 'upgrade' and not upgrading else 'target_unresolved'
-        return dict(status='unknown', reason=reason, matches=[], reverts=[],
+        return dict(status='unknown', reason=reason, matches=[], reverts=[], strict_manifest=None,
                     coverage={'complete': False}, checked_at=None)
     if _fresh(saved, at, options.stale_after_seconds):
         return dict(saved)
@@ -155,7 +155,7 @@ def _side(side, target, upgrading, candidate, key, saved, scheduled, repo, repos
         evidence[key] = {**result, 'attempted_at': at, 'target': target, 'candidate': candidate}
         return result
     return ({**saved, 'retained': True} if saved else
-            dict(status='unknown', reason='pending', matches=[], reverts=[],
+            dict(status='unknown', reason='pending', matches=[], reverts=[], strict_manifest=None,
                  coverage={'complete': False}, checked_at=None))
 
 

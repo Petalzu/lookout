@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from tracker import state
+from tracker.monitors.commits.model import StrictManifest
 from tracker.monitors.model import RawFinding
 from tracker.monitors.requires.model import RequirementAssessment
 from tracker.presentation import activity as activity_presentation
@@ -147,6 +148,7 @@ class BuildStatusOption(BaseModel):
 
 # Facts and display documents are separate projections of the same snapshot.
 class ObservationCheck(BaseModel):
+    configured: bool | None = None
     status: str
     stale: bool
     checked_at: str | None = None
@@ -324,6 +326,7 @@ class CommitSide(BaseModel):
     reason: str | None
     matches: list[str]
     reverts: list[str]
+    strict_manifest: StrictManifest | None = None
     coverage: dict[str, Any]
     checked_at: str | None
     attempted_at: str | None = None
@@ -357,6 +360,8 @@ class CommitSummary(BaseModel):
 
 
 class CommitPage(BaseModel):
+    check: ObservationCheck
+    repository: str | None
     coverage: dict[str, Any] = Field(default_factory=dict)
     items: list[CommitEntry]
     total: int

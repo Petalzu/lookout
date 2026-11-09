@@ -259,18 +259,25 @@ const mock = createServer((req, res) => {
   if (url.pathname === '/api/ui/packages' && url.searchParams.get('monitor') === 'not-registered') {
     res.writeHead(422, {'Content-Type': 'application/json'}); res.end('{}'); return;
   }
-  if (url.pathname === '/api/ui/packages/security/commits') {
+  if (['/api/ui/packages/security/commits', '/api/ui/packages/commits-first-failure/commits'].includes(url.pathname)) {
+    const initialFailure = url.pathname.includes('commits-first-failure');
     const cursor = url.searchParams.get('cursor');
     const side = {status: 'original_reachable', reason: null, matches: ['a'.repeat(40)], reverts: [],
-      checked_at: '2026-01-01T00:00:00Z', coverage: {complete: true},
+      strict_manifest: null, checked_at: '2026-01-01T00:00:00Z', coverage: {complete: true},
       target: {oid: 'b'.repeat(40), version: '1.0'}};
-    const document = project('commits', {name: 'security', status: url.searchParams.get('status'),
-      rule: url.searchParams.get('rule'), page: {total: 2, next_cursor: cursor ? null : 'next-batch-page',
-      items: [{oid: (cursor ? 'c' : 'a').repeat(40), subject: '<script>commit fixture</script>',
+    const check = {configured: true, status: initialFailure ? 'error' : 'ok', stale: initialFailure,
+      checked_at: initialFailure ? null : '2026-01-01T00:00:00Z', attempted_at: '2026-01-02T00:00:00Z',
+      error: initialFailure ? 'timeout <script>first collection</script>' : null, failures: []};
+    const document = project('commits', {name: initialFailure ? 'commits-first-failure' : 'security',
+      status: url.searchParams.get('status'), rule: url.searchParams.get('rule'),
+      page: {check, repository: 'fixture', batch_id: initialFailure ? null : 'fixture-batch',
+      coverage: initialFailure ? {} : {complete: true}, total: initialFailure ? 0 : 2,
+      next_cursor: initialFailure || cursor ? null : 'next-batch-page',
+      items: initialFailure ? [] : [{oid: (cursor ? 'c' : 'a').repeat(40), subject: '<script>commit fixture</script>',
         url: 'https://example.org/upstream/commit/' + 'a'.repeat(40),
         reasons: [{rule: 'riscv-path', field: 'path', fragment: 'target/riscv/cpu.c', path: 'target/riscv/cpu.c'}],
         sides: {current: side, upgrade: {status: 'unknown', reason: 'no_candidate_release', matches: [],
-          reverts: [], coverage: {}, checked_at: null, target: null}}}],
+          reverts: [], strict_manifest: null, coverage: {}, checked_at: null, target: null}}}],
     }});
     res.writeHead(200, {'Content-Type': 'application/json'});
     res.end(JSON.stringify(document)); return;
@@ -455,12 +462,23 @@ try {
   assert.match(commitsPage, /target\/riscv\/cpu.c/);
   assert.match(commitsPage, /&lt;script&gt;commit fixture&lt;\/script&gt;/);
   assert.doesNotMatch(commitsPage, /<script>commit fixture/);
+  assert.match(commitsPage, />Collection<[^]*?>Ok<\/span>/);
+  assert.match(commitsPage, />Configuration<[^]*?>Configured<\/span>/);
+  assert.match(commitsPage, />Last attempt<[^]*?2026-01-02 00:00:00 UTC/);
   const commitMore = commitsPage.match(/class="entry-more" href="([^"]+)"/)[1].replaceAll('&amp;', '&');
   assert.match(commitMore, /status=original_reachable/);
   assert.match(commitMore, /rule=riscv-path/);
   const nextCommits = await read(commitMore);
   assert.doesNotMatch(nextCommits, /class="entry-more"/);
-  console.log('PASS commits: historical states, reasons, escaping and filter-preserving progressive pagination');
+  const initialCommitFailure = await read('/packages/commits-first-failure/commits');
+  const initialCommitSection = initialCommitFailure.match(/<section\b[^>]*id="commits"[^]*?<\/section>/)[0];
+  assert.match(initialCommitSection, />Collection<[^]*?>Error<\/span>/);
+  assert.match(initialCommitSection, />Configuration<[^]*?>Configured<\/span>/);
+  assert.match(initialCommitSection, />Refresh error<[^]*?timeout &lt;script&gt;first collection&lt;\/script&gt;/);
+  assert.match(initialCommitSection, />Last attempt<[^]*?2026-01-02 00:00:00 UTC/);
+  assert.doesNotMatch(initialCommitSection, /<script>first collection|>Observed<\/dt>|class="entry-more"/);
+  assert.doesNotMatch(initialCommitSection, /Original commit in target history|>Ok<\/span>|Complete declared window/);
+  console.log('PASS commits: historical states, initial collection error, escaping and filter-preserving progressive pagination');
 
 
   console.log('PASS API reference: OpenAPI, endpoint table and query links');
