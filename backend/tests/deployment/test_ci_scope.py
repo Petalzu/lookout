@@ -68,3 +68,15 @@ def test_prebuilt_test_image_is_used_without_rebuilding(tmp_path):
     assert 'checks:test' in args
     assert 'runtime:test' not in args
     assert '--network' in args and 'none' in args
+
+
+def test_manual_ci_keeps_the_full_nonrelease_gate():
+    workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+    events = workflow.split('permissions:', 1)[0]
+    assert '  workflow_dispatch:\n' in events
+    dispatch = events.split('  workflow_dispatch:\n', 1)[1].split('  schedule:', 1)[0]
+    assert 'inputs:' not in dispatch
+    assert ci.changed_paths({}) is None and ci.needs_full(None)
+    assert "run: deploy/check-image.sh openruyi-lookout:test openruyi-lookout:check" in workflow
+    assert "run: python3 deploy/smoke-image.py openruyi-lookout:test" in workflow
+    assert "run: python3 deploy/smoke-release.py openruyi-lookout:test" in workflow
