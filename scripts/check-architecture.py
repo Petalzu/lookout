@@ -30,6 +30,7 @@ from tracker import catalog
 # Side-effect-free monitor types and comparisons can be read without collecting.
 PURE_MONITORS = {
     'tracker.monitors.github.model',
+    'tracker.monitors.commits.model',
     'tracker.monitors.contract', 'tracker.monitors.model', 'tracker.monitors.schedule',
     'tracker.monitors.issues', 'tracker.monitors.observations',
     'tracker.monitors.build.status', 'tracker.monitors.version.compare',

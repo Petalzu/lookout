@@ -99,6 +99,14 @@ collect `backend-coverage.xml`, a Cobertura report with repository-relative file
 from the read-only, offline container without a writable host mount. CI enables
 coverage; leave the variable unset for a run without coverage.
 
+CI always generates coverage and preserves the report artifact after successful
+native checks. The separate GitHub Code Quality upload requires that service to
+be available for the repository. Forks opt in with the Actions repository
+variable `LOOKOUT_CODE_QUALITY_ENABLED=true` after enabling Code Quality; the
+non-fork default is unchanged. This only controls the external report integration,
+not tests, coverage generation, artifact upload or the required `CI result` gate.
+An enabled upload still fails on authentication, validation or transport errors.
+
 CI reuses build layers, but runs tests on every code change. Only the document
 paths listed in `scripts/ci-scope.py` skip image checks. Release always runs them.
 Use `CI result` as the required branch check. PRs read shared caches. Only trusted

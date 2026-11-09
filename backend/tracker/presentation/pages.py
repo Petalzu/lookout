@@ -198,7 +198,7 @@ def detail(pkg, collection=None):
     if meta.get('url'):
         shortcuts.append(text(meta['url'], href=meta['url']))
     # Composition order is a reader concern; collectors never encode it.
-    results = sorted(pkg['monitors'].values(), key=lambda m: (m['id'] == 'eol', {'build': 0, 'evidence': 1, 'requires': 1, 'version': 2, 'source': 3, 'activity': 4}[m['data']['kind']]))
+    results = sorted(pkg['monitors'].values(), key=lambda m: (m['id'] == 'eol', {'build': 0, 'evidence': 1, 'requires': 1, 'version': 2, 'source': 3, 'activity': 4, 'commits': 1}[m['data']['kind']]))
     sections, context = [], []
     for result in results:
         kind = result['data']['kind']

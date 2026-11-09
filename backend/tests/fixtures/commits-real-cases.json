@@ -1,0 +1,755 @@
+{
+  "schema": 4,
+  "scope": "Fixed bounded historical inclusion and conservative real RISC-V backport association; raw-Git technical holdouts are not human relevance labels.",
+  "repositories": {
+    "qemu": {
+      "url": "https://github.com/qemu/qemu.git",
+      "cache": "validation-qemu.git"
+    },
+    "llvm": {
+      "url": "https://github.com/llvm/llvm-project.git",
+      "cache": "validation-llvm.git"
+    }
+  },
+  "history_limit": 128,
+  "oracle_version": "raw-git-full-bytes-v1",
+  "annotation_status": "machine_raw_git_not_human_reviewed",
+  "split_policy": "modification-group disjoint; technical holdout, not blinded human ground truth",
+  "annotation_evidence": {
+    "filename": "commits-raw-oracle-20261109T070518Z.json",
+    "sha256": "ad8e4d87c6980c0c0bc75601df821f9972eccff32f73a2a60cda7f0fc2778089"
+  },
+  "source_manifest": {
+    "commit": "0177a49f67423ad73433b43bf6ccb717b9c2a43d",
+    "sha256": "420aa0a9f77fe6fdd816e6dcc343c72e4254ae2f9ea069d8681f1c9fb3dad1ff"
+  },
+  "windows": [
+    {
+      "repository": "qemu",
+      "target": "4fc49f46dc95d4a27de2509e7fceb2931e91faeb",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "history": [
+        "f39ebe53c3f319132cfb60030de12c8547426ace",
+        "5d8033f249d97fc0ba68b13e0d0e327f2dc365e0",
+        "0036ba296ca79ae80d047ced30c2ebfcea232f97",
+        "6df51ffaf6147c85ed50431f4367e8e8bc94d572",
+        "f3c6a0a6dcae7b6beef21a9ee332c1c6e8035c8a",
+        "eb8a247c05a319adbca4741105fa1717a60c1bb0",
+        "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
+        "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
+        "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
+        "7a9ef209e1419e52efc57250d5add430484ae60a",
+        "0cec8aab7df16d1919265c101be7a478de867c45",
+        "2dcdde86fd6aaa93b21d7b5b54f6c24852e2c457",
+        "c45fc7fe1904c2539da41c54e781dda28c9ac121",
+        "b534d228ba9d9c7d63994485708baa3490e1684a",
+        "508876a6287de353b27889756609eff9c359cd4b",
+        "920bfe35bd998574d8a0b5aba26eb07186c2225d",
+        "5ba54cebb427307bac9de75c0ebfbf087957101f",
+        "0d4875d099a3246aeefc2e361c204279274dcdb8",
+        "775b21ddaafd4f08732a26c6ba48e6afeb85653b",
+        "c6a163896f8db9a4fd3573530f1b3332e73cf15a",
+        "d79bb5387c137fc6603ecfd56a47d47138ed9adf",
+        "1e51b89fbc162500c0c57d8ab79a8deb93bda89c",
+        "656e3d9cffbb16bfb010052b852d9ee926a46fc9",
+        "da1314967fc648753fd78c413a19b019de1c2e3a",
+        "18c7eddcf17b97c5d0f57a7ea0f9f242f60dff4c",
+        "2a9d29d76a121a8108c7bf20201fa54722255d03",
+        "1c6befcc91d6340dd9d229775fcd0a2afc42f855",
+        "e9fd4f6b8e5f78e204e1e8abc89ed73f692d2a61",
+        "c826d95dc65ef093a4e2d85e2962bf2485c0ad6d",
+        "f0118c072ed7b1401e803c46b937a2d48db5badc",
+        "4a39c7d61e422e9f0e798c1a895d8f3bdef21277",
+        "5beb969b456f5f24c9e3aa7d1ae3da5729d79980",
+        "98b79943b28d417327e36281dca180dd2b95c75d",
+        "756836f32a394b3cd29dff540a7dd907600dc589",
+        "a1bc6e49b357458eecd94e05ca9eea00336c4dce",
+        "0fdf54ddd5021e51be0dc6eb0119cfee35b8006f",
+        "c6f7053d768581974e95d4215ae298ccd25733f0",
+        "0a46e9b7d06b459707cc67b7fd120e3da0033e42",
+        "241b1bc3a155b63e004824c5c3abe494ce06a244",
+        "25de49d394ee1d72afdcde8533626baec3e8b74d",
+        "d1f4c42cb4a32e58480e690bb9c0f446bc4ffb97",
+        "fa82475d5aee47b20c31ba53097df00588f8c487",
+        "ec2fdc85829a5090ebaea2f4094b9616a4ea6309",
+        "8928e73495426b3ca8a9a26ad1b9d4e9c887ef89",
+        "f731c7d2d4cc511abba74607bea4184c207a069e",
+        "f5154a5eb2adf1745077f78de129f50695afebf1",
+        "82f79d6087c52739ca56decc0ea5c6ec175e84b0",
+        "b335975ee3de3e3ebe89bfce6d883791a318f879",
+        "2fa544fc697d79870bd2ab4e48e00a5f032f507f",
+        "71f0dd0bd63263d2d9bb866796635d24f2dac360",
+        "de05f5d842c52120f736bb6a5b0d169ae5136f56",
+        "569447fdf772d4ce37c02e79901b642e0de26823",
+        "1609265bf85f405351b7af05a875bce82a1e1361",
+        "9d57e0908681637128480bb6602383fe7ce6ace3",
+        "a2eedf74c6b76c68a1f0f7d243a1579180bdd1bb",
+        "93483720ca2d141a68e89be10539a8df340bd2dc",
+        "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+        "f070e57cd5e012299b24edc4bd10429460dc1041",
+        "f9590c25d5909fb3ee7d0981ac4ad12ea938865f",
+        "b485d9fb4e957233923dcb4d303188ffaf8bc50f",
+        "c4d122773512943228f23ef2b58453657d2b30fb",
+        "e1e70bd3bab9aa780756a1482bdf0e632c0a4dc7",
+        "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+        "3e650785f6b6d9804a7d62687a1c19d32102f9aa",
+        "f6f4446a6f3c99304b9dba178086247219e60ee8",
+        "9ba5f72d1d3ea284f3713e2c51c486d6abc3decc",
+        "d5fc2b5b2e8ec1e2a01d64e27cb0898c5516072c",
+        "abae50de244a51ae4e959274e2ef6cbf373464ff",
+        "827802a3384d2290dacab6d602f8ef25bd19c320",
+        "14375ddc834382790b291a98efcca3c65bffa765",
+        "20d62bf3a9a083ca1580695d1f52b317e972734c",
+        "7fe042fef2c5fececf06934320864c9c8a7628d6",
+        "99d5f67cc4eac27d231b8253f253042afa2a79f2",
+        "3c4817284ce803bfe6fc58b3ad0149f2f8e4f8b4",
+        "7d220b64fb4f6d909972ce10e2770047b297a14d",
+        "ed582623e2372fdf862a804d122766052aba81c7",
+        "273bb4dcdebe86ab600ea9f026c35d02ff346bb0",
+        "bfdbb47bcf72f0ad955570b162b99c79a3cb1ace",
+        "6e2f88f2fa859cd4f771700d99a58e4f971e0c3b",
+        "5d5237bf630edbecc66e6aec505694393b3af343",
+        "ddb634132080dc4f5a3c63827d819ec35a6cdb15",
+        "e0e13147cbb21d232ba000d10efa524c00f28dd0",
+        "115f1213aef37fd1c7aaebd1acbbcf835793d1ca",
+        "0df1fa131141a3e019200dfe22227a6fcadb531c",
+        "18e276bc72bd6b765c534a06d4cbd95c7fe8b949",
+        "47c250d7a70d6df810447d23d0e7cb6e6bce388c",
+        "f4745b370d990b7c91116b93e38888d5c0870081",
+        "aa969e71b7c0398064a049750311ac4e390eb6ad",
+        "44457d5e4522386820210d09fb08b91bda55632c",
+        "b267cdd260cfc24aa35a80fafa5f68e38c6304b2",
+        "e9418396e050a5cccf64de180d403f7839ec4eb0",
+        "4fc49f46dc95d4a27de2509e7fceb2931e91faeb"
+      ]
+    },
+    {
+      "repository": "qemu",
+      "target": "f39ebe53c3f319132cfb60030de12c8547426ace",
+      "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
+      "history": [
+        "f39ebe53c3f319132cfb60030de12c8547426ace"
+      ]
+    },
+    {
+      "repository": "llvm",
+      "target": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+      "start": "a255c1ed36a1d06f79bd2633ba9f8d900153007c",
+      "history": [
+        "b4fe3880d09bf3d396bde45cd481449da31e5e17",
+        "b65aa9b5ea8d15276cb4f02214039708af045cbd",
+        "60c18c6aeaedc70e0c1c95be2e9397e788e3b142",
+        "724301d98c6ef981111a077489358de10ec14127",
+        "761b9134dd9beda6f133fdc19a42b148834cb06b",
+        "070e505ce21d5bb0aae18704ec3a2660f59b7e3c",
+        "1f5aee55a3fc26c87fc689011053d8069dd3d849",
+        "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
+        "e80beda6e2558f03f17351f6805e95c8687a82a9",
+        "208ef916cf2062f833913a767e6aafc2c9b543fc",
+        "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"
+      ]
+    },
+    {
+      "repository": "llvm",
+      "target": "b4fe3880d09bf3d396bde45cd481449da31e5e17",
+      "start": "a255c1ed36a1d06f79bd2633ba9f8d900153007c",
+      "history": [
+        "b4fe3880d09bf3d396bde45cd481449da31e5e17"
+      ]
+    }
+  ],
+  "bases": [
+    "Fixed release window contains the candidate object; direct raw Git ancestry check.",
+    "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established.",
+    "Nonempty bounded release-window negative: raw Git ancestry, all messages, stable patch IDs and full before/after bytes checked; no semantic absence claim.",
+    "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer.",
+    "RISC-V changed path in fixed LLVM release range, raw Git ancestor relation. Title alone does not mention RISC-V.",
+    "Explicit public upstream cherry-pick reference; full raw path/mode/before/after byte comparison is unequal, so technical association only, not strict confirmation.",
+    "Nonempty one-commit version-bump window precedes the candidate; independently inspect full window, not an empty-range control.",
+    "Raw Git ancestry in the pinned nonempty release/22.x window."
+  ],
+  "cases": [
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "window": 0,
+      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
+      "basis": 0,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "5ba54cebb427307bac9de75c0ebfbf087957101f"
+        ]
+      }
+    },
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "window": 0,
+      "candidate": "7df9aa5f6d600584c556776505253e849b3902ee",
+      "basis": 1,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "5ba54cebb427307bac9de75c0ebfbf087957101f"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "window": 1,
+      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "window": 0,
+      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
+      "basis": 0,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "0d4875d099a3246aeefc2e361c204279274dcdb8"
+        ]
+      }
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "window": 0,
+      "candidate": "ddac7cfb00ad771f6ef3450fff2d09e749fdbaf9",
+      "basis": 1,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "0d4875d099a3246aeefc2e361c204279274dcdb8"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "window": 1,
+      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "window": 0,
+      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+      "basis": 0,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "ab845a4b74e0f7bd3fc4114838c253ffc25930ef"
+        ]
+      }
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "window": 0,
+      "candidate": "9d6ac47d3182f2bdadea4bed596c82759a167e67",
+      "basis": 1,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "ab845a4b74e0f7bd3fc4114838c253ffc25930ef"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "window": 1,
+      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "window": 0,
+      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+      "basis": 0,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"
+        ]
+      }
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "window": 0,
+      "candidate": "ebfde6dafff2ebfb653d8b9a620ea52a4f714f5b",
+      "basis": 1,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "window": 1,
+      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "window": 0,
+      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
+      "basis": 0,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "7d220b64fb4f6d909972ce10e2770047b297a14d"
+        ]
+      }
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "window": 0,
+      "candidate": "57d98debdf8a3a00e6022ad5c4dad1d8c4fa0f39",
+      "basis": 1,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "7d220b64fb4f6d909972ce10e2770047b297a14d"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "window": 1,
+      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-control-0846740652d1",
+      "split": "independent",
+      "window": 0,
+      "candidate": "0846740652d1333369265fa075708b5a386c5ff6",
+      "basis": 3,
+      "expected": {
+        "status": "strict_patch_evidence",
+        "matches": [
+          "eb8a247c05a319adbca4741105fa1717a60c1bb0"
+        ],
+        "ancestry_complete": false,
+        "strict_manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path_b64": "aHcvaW5wdXQvcHMyLmM=",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "5516eb262d70dca89e1f42a6868531dfa900930c",
+                "sha256": "131104599498147a8c7822f9da410accfca7d1103653af414a05b53345f68677"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "e8300d2d8308629b052976a510ab16337bfc5229",
+                "sha256": "3da9cbceba4b4a44d710c3ee7fc604e5137027ec6298b973b03f29a2b85bbc7b"
+              }
+            }
+          ],
+          "candidate_parent": "884363589b68049cb344b8f8089464bada32a8e7",
+          "matches": [
+            {
+              "oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
+              "parent_oid": "f3c6a0a6dcae7b6beef21a9ee332c1c6e8035c8a"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "qemu-control-0846740652d1",
+      "split": "independent",
+      "window": 1,
+      "candidate": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-control-2667133c2799",
+      "split": "independent",
+      "window": 0,
+      "candidate": "2667133c2799f670366b94059cc0513ae57fe8cb",
+      "basis": 3,
+      "expected": {
+        "status": "strict_patch_evidence",
+        "matches": [
+          "87d0c15627e189cb3b4dd84f65022cb75ee13adf"
+        ],
+        "ancestry_complete": false,
+        "strict_manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path_b64": "am9iLmM=",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "e7479084726c661e75447fd1330ee7cdba888e88",
+                "sha256": "5170b4cb8b37b7f139f064a4bf0c8a8625362fd6a63173a995bad37b221c3d05"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "d7220aaf30cc53648d831eac95de4fa653773bd5",
+                "sha256": "48507da50458a40e1c8b143b4180ece8bc20e51e90f858b2d5583487b06a91fc"
+              }
+            }
+          ],
+          "candidate_parent": "9696bf5dc5a5bf0b4a9d05b6cdfe5f13990f97aa",
+          "matches": [
+            {
+              "oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
+              "parent_oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "qemu-control-2667133c2799",
+      "split": "independent",
+      "window": 1,
+      "candidate": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-control-438ee08bc97a",
+      "split": "independent",
+      "window": 0,
+      "candidate": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
+      "basis": 3,
+      "expected": {
+        "status": "strict_patch_evidence",
+        "matches": [
+          "62a019079b32d3bdddc2856cadd6ddef4f719f8d"
+        ],
+        "ancestry_complete": false,
+        "strict_manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path_b64": "dGVzdHMvdW5pdC90ZXN0LWJsb2Nram9iLmM=",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "abdbe4b8350908cc3698b03b157e5ab8592e5f0a",
+                "sha256": "f1b30f2d2b75251620bca0b95732de4d014ba33826fe6030e0a51dc87e2c312a"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "3b77d19b911e966b16066b3055fbf8f5db187048",
+                "sha256": "71302461b666150202ddda9dfc53c0b92ec81cc33992d6ca6d79f9f191d389a4"
+              }
+            }
+          ],
+          "candidate_parent": "2667133c2799f670366b94059cc0513ae57fe8cb",
+          "matches": [
+            {
+              "oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
+              "parent_oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "qemu-control-438ee08bc97a",
+      "split": "independent",
+      "window": 1,
+      "candidate": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-control-59ecd8a1ac3f",
+      "split": "independent",
+      "window": 0,
+      "candidate": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
+      "basis": 3,
+      "expected": {
+        "status": "strict_patch_evidence",
+        "matches": [
+          "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"
+        ],
+        "ancestry_complete": false,
+        "strict_manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path_b64": "YmxvY2svbW9uaXRvci9iaXRtYXAtcW1wLWNtZHMuYw==",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "a738e7bbf7a132fcb66a016c0e568993b5108932",
+                "sha256": "831941aba9a711e658e55e03c4087e67dd66c28fce61da97a2103adac5d736dd"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "d87ca982aa99f18e2c26d6c8dbedb52c25fb8d5d",
+                "sha256": "a14ae6898c8429a3f68ebc0e6bcfc32a7318b42de28b7e84236935bcbe9a492e"
+              }
+            },
+            {
+              "path_b64": "cWFwaS9ibG9jay1jb3JlLmpzb24=",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "1f87b078505ad1ec41c2a8efb037fed0b3cae069",
+                "sha256": "26774ef49256f152d3e52f76e61e750b75474eaf1e078400d322af7c638010ee"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "199efc1e00879a7ba6837573641e5e4106064291",
+                "sha256": "22b1d036051344b7d3d13efe6d10da249e36c10ac31139f01a5635b80a001e98"
+              }
+            },
+            {
+              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5n",
+              "before": {
+                "mode": "100755",
+                "blob_oid": "15be32dcb96430f25e1cd8e0b837bfcffc646229",
+                "sha256": "d9f0a2f7a1ddc8762e1c89069f20acb036ef2dfd7e5c8b93d56004cf929459f3"
+              },
+              "after": {
+                "mode": "100755",
+                "blob_oid": "a54984fa58e181b15dfd9c05751cc07cf4fb6e75",
+                "sha256": "c487d599cbe21c6ceebf43f56fab32423e54453fb6305911f847dce9e296c264"
+              }
+            },
+            {
+              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5nLm91dA==",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "c28af82c752d1d4b28a433570f6eabd387a1f610",
+                "sha256": "7c538d6816e3ad3d5f7da5b5503f078d98d8235a18f8f8f4eba81175b8de535b"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "fe105fe0a38248a3aa056f4b218a2474d5996b7a",
+                "sha256": "384067ba67850ae39874c9ffc44f2cb2c9bf0ce951cd3fd6c2c3d17c1e196798"
+              }
+            }
+          ],
+          "candidate_parent": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
+          "matches": [
+            {
+              "oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
+              "parent_oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "qemu-control-59ecd8a1ac3f",
+      "split": "independent",
+      "window": 1,
+      "candidate": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "qemu-control-3f3f5cdb929e",
+      "split": "independent",
+      "window": 0,
+      "candidate": "3f3f5cdb929e8621699f92ee6e5018e1e6ea5bf2",
+      "basis": 3,
+      "expected": {
+        "status": "strict_patch_evidence",
+        "matches": [
+          "7a9ef209e1419e52efc57250d5add430484ae60a"
+        ],
+        "ancestry_complete": false,
+        "strict_manifest": {
+          "version": 1,
+          "files": [
+            {
+              "path_b64": "bWlncmF0aW9uL2Jsb2NrLWRpcnR5LWJpdG1hcC5j",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "cba54e25cd50da924e1958bdfc23ce060784b0ac",
+                "sha256": "c1f79b57014003214f099ea1f3ddcaea864f344822fb4fbc6ce52e75f537f0be"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "1b8f39c12bb2fabed44b68fea3e12f222676454d",
+                "sha256": "745225181c2cb30bab96a6c656adb6140df85dff10b702c26e4448596ade8f5f"
+              }
+            },
+            {
+              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0",
+              "before": {
+                "mode": "100755",
+                "blob_oid": "8fb4099201de4f4494cfee1f6ec99ee1721adee3",
+                "sha256": "111356e31b008f6f479744fda5df902f61600014910b83bac67522f0d624c25e"
+              },
+              "after": {
+                "mode": "100755",
+                "blob_oid": "cb9154ca8d7f64bbd5e66e6fbacb2ad407879f16",
+                "sha256": "6b86323ce777ebff3726eec9953ec42f229387793154bffc7e7c080dc4b358cb"
+              }
+            },
+            {
+              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0Lm91dA==",
+              "before": {
+                "mode": "100644",
+                "blob_oid": "cafb8161f7b11e478e2c0834f228257fddcec155",
+                "sha256": "75c048d8217568e64d7ae281235f6a143b4ba009c4d48d0d33e6caa18062b52a"
+              },
+              "after": {
+                "mode": "100644",
+                "blob_oid": "73e375a9d74074bf4f023d1393b29c3c1486478b",
+                "sha256": "0231e10ea51ea3a0b1f78385c1c40f324de4c270a22025d79df4bf5fd83fef45"
+              }
+            }
+          ],
+          "candidate_parent": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
+          "matches": [
+            {
+              "oid": "7a9ef209e1419e52efc57250d5add430484ae60a",
+              "parent_oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "qemu-control-3f3f5cdb929e",
+      "split": "independent",
+      "window": 1,
+      "candidate": "7a9ef209e1419e52efc57250d5add430484ae60a",
+      "basis": 2,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "llvm-riscv-3397c37d5d31",
+      "split": "independent",
+      "window": 2,
+      "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
+      "basis": 4,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "3397c37d5d31e4d4cf1226ba1c36824aa2287252"
+        ]
+      }
+    },
+    {
+      "group": "llvm-riscv-3397c37d5d31",
+      "split": "independent",
+      "window": 2,
+      "candidate": "589faedadf141e5e63f7a1e92a0327fc9bdc9b09",
+      "basis": 5,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "3397c37d5d31e4d4cf1226ba1c36824aa2287252"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "llvm-riscv-3397c37d5d31",
+      "split": "independent",
+      "window": 3,
+      "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
+      "basis": 6,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "group": "llvm-control-239189ca2884",
+      "split": "development",
+      "window": 2,
+      "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+      "basis": 7,
+      "expected": {
+        "status": "original_reachable",
+        "matches": [
+          "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"
+        ]
+      }
+    },
+    {
+      "group": "llvm-control-239189ca2884",
+      "split": "development",
+      "window": 2,
+      "candidate": "239189ca28847aa4797368827107c22c32080509",
+      "basis": 5,
+      "expected": {
+        "status": "backport_needs_review",
+        "reason": "association_only",
+        "matches": [
+          "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"
+        ],
+        "ancestry_complete": false
+      }
+    },
+    {
+      "group": "llvm-control-239189ca2884",
+      "split": "development",
+      "window": 3,
+      "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+      "basis": 6,
+      "expected": {
+        "status": "no_evidence_in_range"
+      }
+    }
+  ],
+  "expectation_defaults": {
+    "reason": null,
+    "reverts": [],
+    "matches": [],
+    "ancestry_complete": true
+  }
+}

@@ -1,0 +1,15 @@
+# Explicit opt-in package units. No release mapping is trusted without review.
+# Merge with existing package policies; do not replace the entire shipped catalog.
+[qemu.monitors.commits]
+repository = "qemu"
+rules = [
+  { id = "riscv-text", keywords = ["riscv", "risc-v"] },
+  { id = "riscv-path", paths = ["target/riscv/**", "hw/riscv/**", "linux-user/riscv/**", "tcg/riscv64/**"] },
+]
+
+[llvm22.monitors.commits]
+repository = "llvm"
+rules = [
+  { id = "riscv-text", keywords = ["riscv", "risc-v"] },
+  { id = "riscv-path", paths = ["llvm/lib/Target/RISCV/**", "llvm/test/CodeGen/RISCV/**", "clang/test/CodeGen/RISCV/**"] },
+]

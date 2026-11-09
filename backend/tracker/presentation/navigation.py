@@ -2,6 +2,7 @@
 
 from tracker.monitors.build import status as build_status
 from tracker.monitors.issues import VERSION_ISSUES, Issue
+from tracker.presentation.commits import TITLES as COMMIT_TITLES
 from tracker.presentation.labels import appearance, caption
 from tracker.presentation.model import (
     Choice,
@@ -124,7 +125,7 @@ def listing_controls(payload, query, focus, links):
         views = []
         if presenter(focus).has_results:
             views.append(Choice(label='Results',
-                count=payload['result_count'] if focus['kind'] in ('evidence', 'requires') else payload['coverage_count'],
+                count=payload['result_count'] if focus['kind'] in ('evidence', 'requires', 'commits') else payload['coverage_count'],
                 selected=payload['section'] == 'results', href=links.to(section='results')))
         views.append(Choice(label='Coverage', count=payload['coverage_count'],
             selected=payload['section'] == 'coverage', href=links.to(section='coverage')))
@@ -138,6 +139,14 @@ def listing_controls(payload, query, focus, links):
                     for m in payload['monitors'] if m['id'] in payload['version_signals']]
                 if related:
                     rows.append(Navigation(label='Related', selection=True, choices=related))
+            elif focus['kind'] == 'commits':
+                for dimension, title in (('status', 'Inclusion'), ('repository', 'Upstream'), ('rule', 'Rule')):
+                    choices = [choice('commits:' + dimension, value,
+                                      COMMIT_TITLES.get(value, value) if dimension == 'status' else value, count)
+                               for value, count in payload.get('commits_counts', {}).get(dimension, {}).items()
+                               if count or links.selected('commits:' + dimension, value)]
+                    if choices:
+                        rows.append(Navigation(label=title, selection=True, choices=choices))
             elif focus['kind'] == 'requires':
                 rows.append(Navigation(label='Dependencies', selection=True, choices=[
                     choice('maintenance', label, label, payload['maintenance_labels'].get(label, 0))

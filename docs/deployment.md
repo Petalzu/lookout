@@ -522,3 +522,11 @@ Configuration and persistent data remain on the host.
 A failed run does not authorize an automatic upgrade. Inspect its logs and any
 draft release before retrying. Do not move a published version tag or reuse its
 version. Use a new version and commit for corrections.
+
+### Commit evidence storage upgrade
+
+Storage format 4 adds the optional commits batch collections. Formats 0, 2 and 3
+require the existing stopped-instance verified backup/migration procedure. Old
+images cannot read format 4; rollback uses the verified pre-upgrade database
+backup. Do not mount NFS as production data or bypass the native sandbox to run
+the new phase. See [Commit evidence](commits.md).

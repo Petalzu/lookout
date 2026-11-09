@@ -69,6 +69,10 @@ elif operation == 'list':
 elif operation == 'activity':
     from tracker.presentation.activity import section
     result = section(request['payload']['name'], request['payload']['kind'], request['payload']['page']).model_dump()
+elif operation == 'commits':
+    from tracker.presentation.commits import history_section
+    result = history_section(request['payload']['name'], request['payload']['page'],
+                             status=request['payload'].get('status'), rule=request['payload'].get('rule')).model_dump()
 elif operation == 'theme':
     result = presentation_pages.theme(request['payload'])
 else:

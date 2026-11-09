@@ -32,3 +32,18 @@ def test_report_export_preserves_directory_permissions(tmp_path, collect, fail):
     args = (tmp_path / 'args').read_text().splitlines()
     assert not any(arg.endswith(':rw,Z') for arg in args)
     assert f'COLLECT_COVERAGE={"1" if collect else ""}' in args
+
+
+def test_fork_coverage_capability_does_not_gate_native_tests_or_artifacts():
+    root = SCRIPT.parents[1]
+    workflow = (root / '.github/workflows/ci.yml').read_text()
+    native = workflow.split('  native:', 1)[1].split('  upload-coverage-python:', 1)[0]
+    upload = workflow.split('  upload-coverage-python:', 1)[1].split('  result:', 1)[0]
+    result = workflow.split('  result:', 1)[1]
+    assert 'LOOKOUT_CODE_QUALITY_ENABLED' not in native
+    assert 'COVERAGE_OUTPUT_DIR: ${{ runner.temp }}/coverage' in native
+    assert 'if-no-files-found: error' in native
+    assert "!github.event.repository.fork || vars.LOOKOUT_CODE_QUALITY_ENABLED == 'true'" in upload
+    assert "needs.native.result == 'success'" in upload
+    assert 'continue-on-error' not in upload
+    assert 'test "$NATIVE" = success' in result

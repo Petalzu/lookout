@@ -210,7 +210,7 @@ let errorStreamClosed;
 let ready = {status: 200, body: {status: 'degraded', generation: 1}};
 let appearancePalette = {custom: {background: '#123456', foreground: '#ffffff', icon: 'gopher'}};
 const publicPaths = [
-  '/api/v2/packages', '/api/v2/packages/security', '/api/v2/packages/security/activity', '/api/v2/tracks/widget',
+  '/api/v2/packages', '/api/v2/packages/security', '/api/v2/packages/security/activity', '/api/v2/packages/security/commits', '/api/v2/tracks/widget',
   '/api/v2/targets', '/api/v2/status', '/api/v2/export', '/api/v2/packages:batchGet',
 ];
 const forwardedRequests = [];
@@ -258,6 +258,29 @@ const mock = createServer((req, res) => {
   }
   if (url.pathname === '/api/ui/packages' && url.searchParams.get('monitor') === 'not-registered') {
     res.writeHead(422, {'Content-Type': 'application/json'}); res.end('{}'); return;
+  }
+  if (['/api/ui/packages/security/commits', '/api/ui/packages/commits-first-failure/commits'].includes(url.pathname)) {
+    const initialFailure = url.pathname.includes('commits-first-failure');
+    const cursor = url.searchParams.get('cursor');
+    const side = {status: 'original_reachable', reason: null, matches: ['a'.repeat(40)], reverts: [],
+      strict_manifest: null, checked_at: '2026-01-01T00:00:00Z', coverage: {complete: true},
+      target: {oid: 'b'.repeat(40), version: '1.0'}};
+    const check = {configured: true, status: initialFailure ? 'error' : 'ok', stale: initialFailure,
+      checked_at: initialFailure ? null : '2026-01-01T00:00:00Z', attempted_at: '2026-01-02T00:00:00Z',
+      error: initialFailure ? 'timeout <script>first collection</script>' : null, failures: []};
+    const document = project('commits', {name: initialFailure ? 'commits-first-failure' : 'security',
+      status: url.searchParams.get('status'), rule: url.searchParams.get('rule'),
+      page: {check, repository: 'fixture', batch_id: initialFailure ? null : 'fixture-batch',
+      coverage: initialFailure ? {} : {complete: true}, total: initialFailure ? 0 : 2,
+      next_cursor: initialFailure || cursor ? null : 'next-batch-page',
+      items: initialFailure ? [] : [{oid: (cursor ? 'c' : 'a').repeat(40), subject: '<script>commit fixture</script>',
+        url: 'https://example.org/upstream/commit/' + 'a'.repeat(40),
+        reasons: [{rule: 'riscv-path', field: 'path', fragment: 'target/riscv/cpu.c', path: 'target/riscv/cpu.c'}],
+        sides: {current: side, upgrade: {status: 'unknown', reason: 'no_candidate_release', matches: [],
+          reverts: [], strict_manifest: null, coverage: {}, checked_at: null, target: null}}}],
+    }});
+    res.writeHead(200, {'Content-Type': 'application/json'});
+    res.end(JSON.stringify(document)); return;
   }
   if (url.pathname === '/api/ui/packages/security/activity') {
     const cursor = url.searchParams.get('cursor');
@@ -433,6 +456,30 @@ try {
   assert.match(older, /title="merged"/);
   assert.doesNotMatch(older, /class="entry-more"/);
   console.log('PASS activity: bounded history, state icons, escaped titles, progressive pagination');
+  const commitsPage = await read('/packages/security/commits?status=original_reachable&rule=riscv-path');
+  assert.match(commitsPage, /Original commit in target history/);
+  assert.match(commitsPage, /No comparable newer release/);
+  assert.match(commitsPage, /target\/riscv\/cpu.c/);
+  assert.match(commitsPage, /&lt;script&gt;commit fixture&lt;\/script&gt;/);
+  assert.doesNotMatch(commitsPage, /<script>commit fixture/);
+  assert.match(commitsPage, />Collection<[^]*?>Ok<\/span>/);
+  assert.match(commitsPage, />Configuration<[^]*?>Configured<\/span>/);
+  assert.match(commitsPage, />Last attempt<[^]*?2026-01-02 00:00:00 UTC/);
+  const commitMore = commitsPage.match(/class="entry-more" href="([^"]+)"/)[1].replaceAll('&amp;', '&');
+  assert.match(commitMore, /status=original_reachable/);
+  assert.match(commitMore, /rule=riscv-path/);
+  const nextCommits = await read(commitMore);
+  assert.doesNotMatch(nextCommits, /class="entry-more"/);
+  const initialCommitFailure = await read('/packages/commits-first-failure/commits');
+  const initialCommitSection = initialCommitFailure.match(/<section\b[^>]*id="commits"[^]*?<\/section>/)[0];
+  assert.match(initialCommitSection, />Collection<[^]*?>Error<\/span>/);
+  assert.match(initialCommitSection, />Configuration<[^]*?>Configured<\/span>/);
+  assert.match(initialCommitSection, />Refresh error<[^]*?timeout &lt;script&gt;first collection&lt;\/script&gt;/);
+  assert.match(initialCommitSection, />Last attempt<[^]*?2026-01-02 00:00:00 UTC/);
+  assert.doesNotMatch(initialCommitSection, /<script>first collection|>Observed<\/dt>|class="entry-more"/);
+  assert.doesNotMatch(initialCommitSection, /Original commit in target history|>Ok<\/span>|Complete declared window/);
+  console.log('PASS commits: historical states, initial collection error, escaping and filter-preserving progressive pagination');
+
 
   console.log('PASS API reference: OpenAPI, endpoint table and query links');
 
