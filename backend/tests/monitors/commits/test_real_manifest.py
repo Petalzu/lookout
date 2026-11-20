@@ -1,11 +1,16 @@
 import base64
+import hashlib
+import json
 import re
 from collections import defaultdict
 
 
 def test_fixed_real_cases_have_disjoint_groups_and_full_identity(cases):
     data = cases
-    assert data['schema'] == 4
+    assert data['schema'] == 5
+    # Frozen from the independent v4 input before regrouping, not from the analyzer.
+    expanded = json.dumps(data['cases'], sort_keys=True, separators=(',', ':')).encode()
+    assert hashlib.sha256(expanded).hexdigest() == '63c84957321e7108640946291f8f33d3b96b3f0b2516fac964bddd6ec276957e'
     assert data['oracle_version'] == 'raw-git-full-bytes-v1'
     assert data['annotation_status'] == 'machine_raw_git_not_human_reviewed'
     assert len(data['cases']) >= 30

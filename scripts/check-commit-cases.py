@@ -13,13 +13,24 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _annotations(manifest):
+    if manifest['schema'] == 4:  # Existing offline reports can be replayed with their original input.
+        for row in manifest['cases']:
+            yield row, row['group'], row['split'], manifest['bases'][row['basis']], row['expected']
+        return
+    for group in manifest['groups']:
+        for row in group['cases']:
+            basis = manifest['bases'][row['basis']]
+            yield row, group['name'], group['split'], basis['text'], {**basis['expected'], **row.get('expected', {})}
+
+
 def load_cases(manifest):
     cases = []
-    for raw in manifest['cases']:
+    for raw, group, split, basis, annotation in _annotations(manifest):
         window = manifest['windows'][raw['window']]
         identity = {key: window[key] for key in ('target', 'start')}
         identity['candidate'] = raw['candidate']
-        expected = {**manifest['expectation_defaults'], **raw['expected']}
+        expected = {**manifest['expectation_defaults'], **annotation}
         ancestry = expected.pop('ancestry_complete')
         proof = expected.pop('strict_manifest', None)
         expected.update(identity=identity, coverage=dict(target=window['target'], start=window['start'],
@@ -27,8 +38,8 @@ def load_cases(manifest):
             strict_manifest=None if proof is None else dict(version=proof['version'],
                 candidate=dict(oid=raw['candidate'], parent_oid=proof['candidate_parent'], files=proof['files']),
                 matches=[{**change, 'files': proof['files']} for change in proof['matches']]))
-        cases.append({**identity, 'group': raw['group'], 'split': raw['split'], 'repository': window['repository'],
-                      'basis': manifest['bases'][raw['basis']], 'expected': expected['status'], 'expected_details': expected})
+        cases.append({**identity, 'group': group, 'split': split, 'repository': window['repository'],
+                      'basis': basis, 'expected': expected['status'], 'expected_details': expected})
     return cases
 
 
@@ -85,7 +96,7 @@ def main(argv=None):
         parser.error('output must not already exist (historical evidence is immutable)')
     raw = args.manifest.read_bytes()
     manifest = json.loads(raw)
-    if manifest.get('schema') != 4 or manifest.get('oracle_version') != 'raw-git-full-bytes-v1':
+    if manifest.get('schema') not in (4, 5) or manifest.get('oracle_version') != 'raw-git-full-bytes-v1':
         parser.error('frozen independent raw-Git expectations are required')
     before = source_identity()
     repositories = {name: Repository(args.cache_root / policy['cache'], timeout=90,

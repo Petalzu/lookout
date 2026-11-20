@@ -68,8 +68,7 @@ def test_method_version_changes_evidence_identity(monkeypatch):
 
     target = dict(side='current', oid='b' * 40, revision='r')
     current = model.evidence_key('repo', OID, target, 'rules', {'start': None})
-    assert model.METHOD_VERSION == 2
-    monkeypatch.setattr(model, 'METHOD_VERSION', 1)
+    monkeypatch.setattr(model, 'METHOD_VERSION', 2)
     assert current != model.evidence_key('repo', OID, target, 'rules', {'start': None})
 
 

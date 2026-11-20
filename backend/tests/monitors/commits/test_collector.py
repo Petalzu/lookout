@@ -1,3 +1,7 @@
+import json
+from datetime import datetime, timedelta
+from types import SimpleNamespace
+
 import pytest
 
 from tests.conftest import ProjectedClient
@@ -24,7 +28,8 @@ def package(config, snapshot, tmp_path, monkeypatch):
     (repo_path / 'file').write_text('two\n')
     git(repo_path, 'commit', '-qam', 'riscv: fix')
     fix = git(repo_path, 'rev-parse', 'HEAD')
-    snapshot['specs'] = {'binutils': dict(head=base, fetched_at=state.utcnow(), error=None,
+    snapshot['tracks']['binutils']['fetched_at'] = STAMP
+    snapshot['specs'] = {'binutils': dict(head=base, fetched_at=STAMP, error=None,
         source_origin={'url': 'https://example.org/spec', 'branch': 'main'}, native_query=dict(spec_sha256='a' * 64, context={'resolver': 6}),
         metadata=dict(version='3.9.0', sources=[{'number': 0, 'url': 'https://example.org/src.tar.xz'}]))}
     revision = state.current_source(snapshot, 'binutils')['revision']
@@ -40,7 +45,9 @@ def package(config, snapshot, tmp_path, monkeypatch):
     return config, db, Repository(repo_path), base, fix
 
 
-def test_fixed_manifest_resumes_same_tip(package):
+def test_fixed_manifest_resumes_same_tip(package, monkeypatch):
+    from tracker.monitors.commits import scan as scanning
+
     config, _, repo, base, fix = package
     policy = settings(config).repositories['fixture']
     scan, records = advance(repo, policy, {}, {}, state.utcnow(), 0, fetch=False)
@@ -54,16 +61,20 @@ def test_fixed_manifest_resumes_same_tip(package):
     assert next_scan['ids'][0] == fix and len(next_scan['ids']) == 2
     assert next_scan['complete']
     assert next_scan['cursor'] == 2
+    monkeypatch.setattr(scanning, 'json_size', lambda _: pytest.fail('unchanged records must not be serialized'))
+    same, saved = advance(repo, policy, next_scan, records, NEXT, 1, fetch=False)
+    assert same['ids'] == next_scan['ids'] and saved == records
 
 
-@pytest.mark.parametrize(('relation', 'reason'), [
-    ('current', 'no_candidate_release'),
-    ('outdated', 'target_unresolved'),
+@pytest.mark.parametrize(('relation', 'at', 'reason'), [
+    ('current', STAMP, 'no_candidate_release'),
+    ('outdated', STAMP, 'target_unresolved'),
+    ('outdated', NEXT, 'no_candidate_release'),  # Stale upstream is not an upgrade candidate.
 ])
-def test_real_collector_storage_and_upgrade_eligibility(package, monkeypatch, relation, reason):
+def test_real_collector_storage_and_upgrade_eligibility(package, monkeypatch, relation, at, reason):
     config, db, repo, _, fix = package
     monkeypatch.setattr(state, 'compare', lambda *args: relation)
-    result = collect(config, db, repositories={'fixture': repo})
+    result = collect(config, db, repositories={'fixture': repo}, now=at)
     assert state.read(db) == result
     batch = result['commits_batches']['binutils']['active']
     assert batch['source_identity']['name'] == 'binutils'
@@ -73,33 +84,16 @@ def test_real_collector_storage_and_upgrade_eligibility(package, monkeypatch, re
     assert current['target']['oid'] == fix
     assert current['checked_at'] is not None
     assert batch['entries'][0]['sides']['upgrade']['reason'] == reason
-    assert batch['target_version'] == ('3.10.0' if relation == 'outdated' else None)
+    assert batch['target_version'] == ('3.10.0' if reason == 'target_unresolved' else None)
 
 
-def test_same_evidence_keeps_source_time(package):
+def test_identical_replay_is_a_noop_and_a_fresh_side_keeps_its_time(package):
     config, db, repo, _, _ = package
-    first = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:00:00+00:00')
+    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    assert collect(config, db, repositories={'fixture': repo}, now=STAMP) == first
     saved = first['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
     second = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:01:00+00:00')
     assert second['commits_batches']['binutils']['active']['entries'][0]['sides']['current']['checked_at'] == saved['checked_at']
-
-
-def test_saved_results_reach_typed_api_and_document(package):
-    from tracker.readmodel import commits as view
-
-    config, db, repo, _, fix = package
-    result = collect(config, db, repositories={'fixture': repo})
-    assert view.page(result, 'binutils')['items'][0]['oid'] == fix
-    with ProjectedClient(create_app(db)) as client:
-        response = client.get('/api/v2/packages/binutils?include=commits')
-        assert response.status_code == 200, response.text
-        assert response.json()['monitors']['commits']['data']['selected'] == 1
-        response = client.get('/api/ui/packages/binutils')
-        assert response.status_code == 200, response.text
-        assert any(section['id'] == 'commits' for section in response.json()['sections'])
-        response = client.get('/api/v2/packages/binutils/commits')
-        assert response.status_code == 200, response.text
-        assert response.json()['items'][0]['oid'] == fix
 
 
 def test_pages_bind_filters_and_exact_batch(package):
@@ -170,12 +164,14 @@ def test_permanent_failure_does_not_starve_unseen_candidate(package, monkeypatch
     assert len(set(calls)) == 2
 
 
-def test_initial_fetch_failure_is_visible_as_error_not_unconfigured(package, monkeypatch):
-
+@pytest.mark.parametrize('has_batch', [False, True], ids=['initial', 'refresh'])
+def test_fetch_failure_shares_check_without_advancing_observation(package, monkeypatch, has_batch):
     config, db, repo, _, _ = package
+    previous = (collect(config, db, repositories={'fixture': repo}, now=STAMP)['commits_batches']['binutils']['active']
+                if has_batch else None)
     monkeypatch.setattr(repo, 'resolve', lambda ref: (_ for _ in ()).throw(GitError('timeout')))
-    result = collect(config, db, repositories={'fixture': repo})
-    assert 'active' not in result['commits_batches']['binutils']
+    result = collect(config, db, repositories={'fixture': repo}, now=NEXT)
+    assert result['commits_batches']['binutils'].get('active') == previous
     with ProjectedClient(create_app(db)) as client:
         response = client.get('/api/v2/packages/binutils?include=commits')
         assert response.status_code == 200, response.text
@@ -183,14 +179,38 @@ def test_initial_fetch_failure_is_visible_as_error_not_unconfigured(package, mon
         assert summary['status'] == 'error' and summary['error'] == 'timeout'
         history = client.get('/api/v2/packages/binutils/commits')
         assert history.status_code == 200, history.text
-        assert history.json()['check'] == summary
-        assert history.json()['repository'] == 'fixture'
-        assert summary['configured'] and summary['checked_at'] is None
-        assert history.json()['items'] == []
+        facts = history.json()
+        assert facts['check'] == summary and facts['repository'] == 'fixture'
+        assert summary['configured'] and summary['checked_at'] == (STAMP if has_batch else None)
+        assert summary['attempted_at'] == NEXT and bool(facts['items']) == has_batch
+        assert all(item['stale'] for item in facts['items'])
         document = client.get('/api/ui/packages/binutils/commits')
         assert document.status_code == 200, document.text
         assert 'timeout' in document.text and 'Last attempt' in document.text
         assert 'Configured' in document.text
+
+
+def test_repository_retry_is_scoped_to_the_policy_that_failed(package):
+    config, db, repo, _, fix = package
+    policy = config['commits']['repositories']['fixture']
+    policy['ref'] = 'refs/heads/missing'
+    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    failure = first['components']['commits:fixture']
+    assert failure['error'] and failure['failures'] == 1
+    before_retry = '2026-11-06T10:01:00+00:00'
+    assert collect(config, db, repositories={'fixture': repo}, now=before_retry) == first
+
+    policy['ref'] = 'refs/heads/also-missing'
+    changed = collect(config, db, repositories={'fixture': repo}, now=before_retry)
+    check = changed['components']['commits:fixture']
+    assert check['error'] and check['attempted_at'] == before_retry and check['failures'] == 1
+
+    policy['ref'] = 'refs/heads/main'
+    recovered = collect(config, db, repositories={'fixture': repo}, now=before_retry)
+    check = recovered['components']['commits:fixture']
+    assert check['error'] is None and check['fetched_at'] == before_retry
+    assert not check.get('retry_at') and not check.get('failures')
+    assert recovered['commits_batches']['binutils']['active']['scan_tip'] == fix
 
 
 def test_removed_policy_clears_owned_state_without_touching_others(package):
@@ -205,18 +225,91 @@ def test_removed_policy_clears_owned_state_without_touching_others(package):
 
 
 def test_tag_drift_retains_original_binding_without_refresh_time(package, monkeypatch):
-    config, db, repo, _, fix = package
+    config, db, repo, base, fix = package
+    config['commits']['batch_size'] = 4
     mapping = config['packages']['binutils']['monitors']['commits']['mappings']['3.9.0']
     mapping['ref'] = 'refs/tags/v3.9.0'
     monkeypatch.setattr(repo, 'fetch', lambda *a, **k: fix)
-    first = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:00:00+00:00')
+    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
     saved = first['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
-    monkeypatch.setattr(repo, 'fetch', lambda *a, **k: 'f' * 40)
-    result = collect(config, db, repositories={'fixture': repo}, now='2026-11-08T10:00:00+00:00')
-    observed = result['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
+    (repo.path / 'later').write_text('another candidate')
+    new = commit(repo.path, 'riscv: later')
+    refs = []
+
+    def moved(url, ref, **kwargs):
+        refs.append(ref)
+        return base
+
+    monkeypatch.setattr(repo, 'fetch', moved)
+    result = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:01:00+00:00')
+    sides = {e['oid']: e['sides']['current'] for e in result['commits_batches']['binutils']['active']['entries']}
+    observed = sides[fix]
     assert observed['target']['oid'] == fix
     assert observed['retained'] and observed['error'] == 'tag_drift'
-    assert observed['checked_at'] == saved['checked_at']
+    assert observed['checked_at'] == saved['checked_at'] == STAMP
+    assert sides[new]['reason'] == 'tag_drift' and sides[new]['checked_at'] is None
+    assert not sides[new].get('retained') and refs == [mapping['ref']]
+    for side in sides.values():
+        cached = result['commits_evidence']['binutils'][side['key']]
+        assert cached['checked_at'] == side['checked_at']
+        assert cached['attempted_at'] == side['attempted_at'] == '2026-11-06T10:01:00+00:00'
+    monkeypatch.setattr(repo, 'fetch', lambda *a, **k: fix)
+    recovered = collect(config, db, repositories={'fixture': repo}, now=NEXT)
+    for entry in recovered['commits_batches']['binutils']['active']['entries']:
+        side = entry['sides']['current']
+        assert side['checked_at'] == NEXT and not side.get('error') and not side.get('retained')
+
+
+@pytest.mark.parametrize(('mapping_ref', 'moved', 'reason'), [
+    (None, False, None),
+    (None, True, 'tag_drift'),
+    ('refs/tags/packaging-3.9.0', False, 'target_unresolved'),
+])
+def test_current_source_archive_tag_binds_only_the_current_side(package, monkeypatch, mapping_ref, moved, reason):
+    config, db, repo, base, fix = package
+    archive = 'https://example.org/repo/archive/refs/tags/v3.9.0.tar.gz'
+    snapshot = state.read(db)
+    snapshot['specs']['binutils']['metadata']['sources'][0]['url'] = archive
+    state.commit(db, snapshot)
+    mappings = config['packages']['binutils']['monitors']['commits']['mappings']
+    mappings['3.9.0'].update(source_url=archive, ref=mapping_ref)
+    mappings['3.10.0'] = dict(mappings['3.9.0'], ref=None, source_url='https://example.org/upgrade.tar.xz')
+    config['commits']['batch_size'] = 1 if reason else 2  # A failed ref cannot consume the other side's slot.
+    git(repo.path, 'tag', 'v3.9.0', base if moved else fix)
+    git(repo.path, 'tag', 'packaging-3.9.0', fix)
+    monkeypatch.setattr(state, 'compare', lambda *args: 'outdated')
+    monkeypatch.setattr(repo, 'fetch', lambda url, ref, **kwargs: repo.resolve(ref))
+
+    result = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+    sides = result['commits_batches']['binutils']['active']['entries'][0]['sides']
+    current, upgrade = sides['current'], sides['upgrade']
+    assert current['status'] == ('unknown' if reason else 'original_reachable')
+    assert current['reason'] == reason
+    assert current['checked_at'] == (None if reason else STAMP)
+    if reason == 'target_unresolved':
+        assert current['target'] is None
+    else:
+        assert current['target']['ref'] == 'refs/tags/v3.9.0'
+    assert upgrade['status'] == 'original_reachable' and upgrade['target']['ref'] is None
+
+
+@pytest.mark.parametrize('remaining', [-1, 0])
+def test_resumed_selection_uses_exact_ascii_json_array_budget(monkeypatch, remaining):
+    ids = [letter * 40 for letter in 'cadb']
+    reasons = [dict(rule=str(i), field='subject', path=None, fragment='\u6d4b"\\' * 42) for i in range(22)]
+    entries = [dict(oid=oid, reasons=reasons, reasons_truncated=False) for oid in sorted(ids)]
+    budget = len(json.dumps(entries[:2]).encode()) + remaining
+    options = model.Settings(batch_size=4, max_findings=2, max_batch_bytes=budget)
+    repo = SimpleNamespace(deadline=None, url='https://example.org/repo')
+    monkeypatch.setattr(collector, 'match_rules', lambda *a, **k: reasons)
+    records = dict.fromkeys(ids)
+    progress = None
+    for cursor in (2, 4):
+        progress = collector._matching(SimpleNamespace(rules=[]), repo, options, dict(ids=ids, cursor=cursor),
+                                       records, progress, repo, 'r')
+        assert progress['total'] == cursor
+    assert progress['ids'] == ids
+    assert progress['matches'] == entries[:1 if remaining < 0 else 2]
 
 
 def test_candidate_response_limit_preserves_total_and_bounded_rule_progress(package):
@@ -244,13 +337,13 @@ def test_target_sides_can_succeed_and_fail_independently(package, monkeypatch):
 
     def unknown_target(*args, **kwargs):
         if args[0] == 'e' * 40:
-                    raise GitError('missing_object')
+            raise GitError('missing_object')
         return resolve(*args, **kwargs)
 
     resolve = repo.resolve
     monkeypatch.setattr(repo, 'resolve', unknown_target)
     monkeypatch.setattr(repo, 'fetch', lambda *a, **k: (_ for _ in ()).throw(collector.GitError('timeout')))
-    result = collect(config, db, repositories={'fixture': repo})
+    result = collect(config, db, repositories={'fixture': repo}, now=STAMP)
     batch = result['commits_batches']['binutils']['active']
     assert batch['entries'][0]['sides']['current']['status'] == 'original_reachable'
     assert batch['entries'][0]['sides']['upgrade']['reason'] == 'timeout'
@@ -285,13 +378,6 @@ def test_rule_failure_is_local_to_one_package(package, monkeypatch):
     assert result['components']['commits:fixture']['error'] is None
 
 
-def test_identical_replay_does_not_write_or_advance_generation(package):
-    config, db, repo, _, _ = package
-    first = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:00:00+00:00')
-    second = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:00:00+00:00')
-    assert second == first
-
-
 def test_retained_commit_filter_is_the_same_evidence_as_detail(package):
 
     config, db, repo, _, _ = package
@@ -324,20 +410,24 @@ def test_strict_manifest_round_trips_storage_api_and_document(strict_package):
     batch = result['commits_batches']['binutils']['active']
     side = batch['entries'][0]['sides']['current']
     manifest = side['strict_manifest']
-    assert batch['method_version'] == 2
+    assert batch['method_version'] == model.METHOD_VERSION
     assert side['status'] == 'strict_patch_evidence' and manifest['candidate']['oid'] == fix
     assert manifest['matches'][0]['oid'] == side['target']['oid']
     saved = state.read(db)
     assert saved['commits_evidence']['binutils'][side['key']]['strict_manifest'] == manifest
     assert saved['commits_batches']['binutils']['active']['entries'][0]['sides']['current']['strict_manifest'] == manifest
+    assert page(saved, 'binutils')['items'][0]['oid'] == fix
     with ProjectedClient(create_app(db)) as client:
         summary = client.get('/api/v2/packages/binutils?include=commits').json()['monitors']['commits']
         history = client.get('/api/v2/packages/binutils/commits').json()
+        assert summary['data']['selected'] == 1 and history['items'][0]['oid'] == fix
         assert summary['data']['entries'][0]['sides']['current']['strict_manifest'] == manifest
         assert history['items'][0]['sides']['current']['strict_manifest'] == manifest
         for url in ('/api/ui/packages/binutils', '/api/ui/packages/binutils/commits'):
             response = client.get(url)
             assert response.status_code == 200, response.text
+            if url.endswith('binutils'):
+                assert any(section['id'] == 'commits' for section in response.json()['sections'])
             assert 'Saved manifest v1' in response.text
             assert manifest['candidate']['parent_oid'] in response.text
             assert manifest['candidate']['files'][0]['after']['sha256'] in response.text
@@ -362,22 +452,23 @@ def test_strict_manifest_failure_retention_and_target_identity(strict_package, m
     assert current['strict_manifest'] is None
 
 
-def test_old_method_manifest_is_readable_but_not_reused(package, monkeypatch):
-
-    config, db, repo, _, _ = package
-    monkeypatch.setattr(collector, 'METHOD_VERSION', 1)
-    monkeypatch.setattr(model, 'METHOD_VERSION', 1)
-    old = collect(config, db, repositories={'fixture': repo}, now=STAMP)
+@pytest.mark.parametrize('previous_method', [1, 2])
+def test_old_method_manifest_is_readable_but_not_reused(strict_package, monkeypatch, previous_method):
+    config, db, repo, _, _ = strict_package
+    with monkeypatch.context() as previous:
+        previous.setattr(collector, 'METHOD_VERSION', previous_method)
+        previous.setattr(model, 'METHOD_VERSION', previous_method)
+        old = collect(config, db, repositories={'fixture': repo}, now=STAMP)
     side = old['commits_batches']['binutils']['active']['entries'][0]['sides']['current']
-    side.pop('strict_manifest', None)
+    if previous_method == 1:
+        side.pop('strict_manifest')  # v1 predates persisted strict manifests.
     state.commit(db, old)
     assert page(old, 'binutils')['check']['status'] == 'input_changed'
     with ProjectedClient(create_app(db)) as client:
         response = client.get('/api/v2/packages/binutils/commits')
         assert response.status_code == 200, response.text
-        assert response.json()['items'][0]['sides']['current']['strict_manifest'] is None
-    monkeypatch.setattr(collector, 'METHOD_VERSION', 2)
-    monkeypatch.setattr(model, 'METHOD_VERSION', 2)
+        item = response.json()['items'][0]
+        assert item['stale'] and item['sides']['current']['strict_manifest'] == side.get('strict_manifest')
     monkeypatch.setattr(collector, 'analyze', lambda *args, **kwargs: dict(status='unknown', reason='timeout',
         matches=[], reverts=[], strict_manifest=None, coverage={'complete': False}))
     new = collect(config, db, repositories={'fixture': repo}, now='2026-11-06T10:01:00+00:00')
@@ -388,9 +479,6 @@ def test_old_method_manifest_is_readable_but_not_reused(package, monkeypatch):
 
 @pytest.mark.parametrize('condition', ['not_configured', 'pending', 'repo_error', 'package_error'])
 def test_history_without_batch_shares_summary_check_and_attempt(package, condition):
-    from datetime import datetime
-    from types import SimpleNamespace
-
     from tracker.monitors.version.compare import evaluate
     from tracker.presentation.commits import history_section
     from tracker.readmodel import commits
@@ -420,25 +508,14 @@ def test_history_without_batch_shares_summary_check_and_attempt(package, conditi
 
 
 @pytest.mark.parametrize('condition', ['ok', 'error', 'expired', 'input_changed'])
-def test_history_with_batch_shares_summary_check_times_and_staleness(package, condition, monkeypatch):
-    from datetime import datetime, timedelta
-    from types import SimpleNamespace
-
-    from tracker.monitors.version import compare as versions
+def test_history_with_batch_shares_summary_check_times_and_staleness(package, condition):
+    from tracker.monitors.version.compare import evaluate
     from tracker.presentation.commits import history_section
     from tracker.readmodel import commits
 
     config, db, repo, _, _ = package
     observed = datetime.fromisoformat(STAMP)
-
-    class CollectionClock(datetime):
-        @classmethod
-        def now(cls, tz=None):
-            return observed.astimezone(tz) if tz else observed.replace(tzinfo=None)
-
-    monkeypatch.setattr(versions, 'datetime', CollectionClock)
     seeded = state.read(db)
-    seeded['specs']['binutils'].update(fetched_at=STAMP, attempted_at=STAMP)
     seeded['tracks']['binutils'].update(version='3.9.0', fetched_at=STAMP, attempted_at=STAMP)
     state.commit(db, seeded)
     # Expire commit evidence while source/upstream facts and release eligibility stay fixed.
@@ -450,7 +527,7 @@ def test_history_with_batch_shares_summary_check_times_and_staleness(package, co
     elif condition == 'input_changed':
         snapshot['specs']['binutils']['metadata']['sources'][0]['url'] = 'https://example.org/changed.tar.xz'
     now = observed + timedelta(seconds=7201) if condition == 'expired' else observed
-    version = versions.evaluate(snapshot, 'binutils', now)
+    version = evaluate(snapshot, 'binutils', now)
     assert not version.upgrading and not version.upstream_stale
     summary = commits.project(SimpleNamespace(snapshot=snapshot, name='binutils', version=version, now=now))
     page = commits.page(snapshot, 'binutils', now=now)
@@ -465,25 +542,6 @@ def test_history_with_batch_shares_summary_check_times_and_staleness(package, co
     assert condition.replace('_', ' ').title() in rendered
     if condition == 'error':
         assert 'timeout' in rendered
-
-
-def test_retained_batch_history_api_keeps_observed_time_and_latest_failure(package, monkeypatch):
-
-    config, db, repo, _, _ = package
-    first = collect(config, db, repositories={'fixture': repo}, now=STAMP)
-    monkeypatch.setattr(repo, 'resolve', lambda ref: (_ for _ in ()).throw(GitError('timeout')))
-    failed = collect(config, db, repositories={'fixture': repo}, now=NEXT)
-    assert failed['commits_batches']['binutils']['active'] == first['commits_batches']['binutils']['active']
-    with ProjectedClient(create_app(db)) as client:
-        summary = client.get('/api/v2/packages/binutils?include=commits').json()['monitors']['commits']
-        history = client.get('/api/v2/packages/binutils/commits').json()
-        assert history['check'] == summary['check']
-        assert history['check']['status'] == 'error' and history['check']['error'] == 'timeout'
-        assert history['check']['checked_at'] == STAMP and history['check']['attempted_at'] == NEXT
-        assert history['items'] and all(item['stale'] for item in history['items'])
-        response = client.get('/api/ui/packages/binutils/commits')
-        assert response.status_code == 200, response.text
-        assert 'timeout' in response.text and 'Last attempt' in response.text
 
 
 def test_batch_byte_limit_never_splits_or_drops_a_published_strict_manifest(package):
@@ -513,16 +571,21 @@ def test_batch_byte_limit_never_splits_or_drops_a_published_strict_manifest(pack
     assert batch['entries'][0]['sides']['current']['strict_manifest'] == proof
 
 
-@pytest.mark.parametrize('changed_input', ['source', 'upstream', 'budget'])
+@pytest.mark.parametrize('changed_input', ['source', 'upstream', 'budget', 'expiry'])
 def test_publication_rejects_changed_inputs(package, monkeypatch, changed_input):
     config, db, repo, _, _ = package
     original = repo.read_commit
     changed = False
+    if changed_input == 'expiry':
+        monkeypatch.setattr(state, 'compare', lambda *args: 'outdated')
+        monkeypatch.setattr(state, 'utcnow', lambda: NEXT if changed else STAMP)
 
     def change(value):
         nonlocal changed
         if not changed:
             changed = True
+            if changed_input == 'expiry':  # Only the clock moves; the saved observations do not change.
+                return original(value)
             latest = state.read(db)
             if changed_input == 'source':
                 latest['specs']['binutils']['head'] = 'f' * 40

@@ -31,8 +31,12 @@ Optional `mappings` are keyed by exact release version and require a full `oid`,
 current SPEC `source_revision`, trusted `source_url`, public `review_url` and
 positive mapping `version`. Optional `ref` must be a release tag. Current Source0
 must agree with the reviewed mapping; contradictory trusted full commit evidence
-cannot be overridden. Version strings, homepages and mutable tags alone do not
-establish identity. The examples omit mappings pending operator review.
+cannot be overridden. If current Source0 identifies a release tag, the collector
+checks that exact tag against the reviewed OID even when `ref` is omitted. All
+visible candidates share the check; a fresh cached result cannot hide a moved tag. A
+different explicit tag leaves the current target unresolved. The upgrade uses its
+own mapping, not the current package's tag. A tag alone never establishes an OID.
+The examples omit mappings pending operator review.
 
 Use the existing CLI: `python -m tracker.collector --config CONFIG --db DB --only
 commits` (on one line). The image entrypoint schedules configured policies.
@@ -105,8 +109,10 @@ Formats 0/2/3 require the stopped-instance backup/migration procedure in the
 [deployment guide](deployment.md). Migration preserves observations/clocks and
 rolls back on failure. Older binaries require the verified old backup for rollback.
 Strict manifests add JSON fields within format 4; old missing fields read as null.
-Method-v1 facts remain readable but cannot be reused as method-v2 evidence.
-Repository retries use bounded backoff; package rule failures stay local.
+Method v3 binds recognized current Source0 tags. Older batches remain readable as
+stale history; their evidence is never reused for a v3 check. Repository backoff
+is scoped to the scan policy: changing the branch, window or budget allows a new
+attempt at the next collection. Package rule failures stay local.
 
 ## API, pages and verification
 
@@ -131,8 +137,8 @@ ABI 6+; do not disable isolation or NFS storage guards to pass on an unsuitable 
 
 The [frozen corpus](../backend/tests/fixtures/commits-real-cases.json) contains 31
 QEMU/LLVM cases: 18 development, 13 independent, 12 disjoint modification groups
-and 12 nonempty negatives (QEMU 25 / LLVM 6). Schema 4 shares frozen windows,
-explanation text, empty defaults and identical strict file lists. Expansion retains
+and 12 nonempty negatives (QEMU 25 / LLVM 6). Schema 5 groups by modification and
+shares repeated expectations; schema 4 remains replayable. Expansion retains
 every independent assertion; `source_manifest` identifies the original full raw-Git
 annotations by commit and SHA-256. Historical one-off tools remain in that commit.
 

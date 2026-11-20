@@ -14,7 +14,7 @@ from tracker.monitors.schedule import Schedule
 
 STATUSES = ('original_reachable', 'strict_patch_evidence', 'backport_needs_review',
             'no_evidence_in_range', 'unknown')
-METHOD_VERSION = 2
+METHOD_VERSION = 3
 STRICT_MANIFEST_VERSION = 1
 STRICT_FILE_LIMIT = 256
 STRICT_PATH_BYTES = 4096
@@ -24,6 +24,11 @@ STRICT_MANIFEST_BYTES = 65536
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
                                      ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+
+
+def json_size(value):
+    """Policy budgets count default ASCII JSON bytes, not the compact SQLite encoding."""
+    return len(json.dumps(value, ensure_ascii=True))
 
 
 def complete_oid(value):
@@ -157,6 +162,10 @@ class RepositoryPolicy(Policy):
 
     _url = field_validator('url', 'web_url')(https_url)
     _start = field_validator('window_start')(oid)
+
+    @property
+    def fingerprint(self) -> str:
+        return digest(self.model_dump())
 
     @model_validator(mode='after')
     def object_identity(self):

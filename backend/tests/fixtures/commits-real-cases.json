@@ -1,5 +1,5 @@
 {
-  "schema": 4,
+  "schema": 5,
   "scope": "Fixed bounded historical inclusion and conservative real RISC-V backport association; raw-Git technical holdouts are not human relevance labels.",
   "repositories": {
     "qemu": {
@@ -127,9 +127,7 @@
       "repository": "qemu",
       "target": "f39ebe53c3f319132cfb60030de12c8547426ace",
       "start": "c3d48b7d1e89604920e5b81b91140c2ad39a1943",
-      "history": [
-        "f39ebe53c3f319132cfb60030de12c8547426ace"
-      ]
+      "history": ["f39ebe53c3f319132cfb60030de12c8547426ace"]
     },
     {
       "repository": "llvm",
@@ -153,596 +151,61 @@
       "repository": "llvm",
       "target": "b4fe3880d09bf3d396bde45cd481449da31e5e17",
       "start": "a255c1ed36a1d06f79bd2633ba9f8d900153007c",
-      "history": [
-        "b4fe3880d09bf3d396bde45cd481449da31e5e17"
-      ]
+      "history": ["b4fe3880d09bf3d396bde45cd481449da31e5e17"]
     }
   ],
   "bases": [
-    "Fixed release window contains the candidate object; direct raw Git ancestry check.",
-    "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established.",
-    "Nonempty bounded release-window negative: raw Git ancestry, all messages, stable patch IDs and full before/after bytes checked; no semantic absence claim.",
-    "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer.",
-    "RISC-V changed path in fixed LLVM release range, raw Git ancestor relation. Title alone does not mention RISC-V.",
-    "Explicit public upstream cherry-pick reference; full raw path/mode/before/after byte comparison is unequal, so technical association only, not strict confirmation.",
-    "Nonempty one-commit version-bump window precedes the candidate; independently inspect full window, not an empty-range control.",
-    "Raw Git ancestry in the pinned nonempty release/22.x window."
-  ],
-  "cases": [
     {
-      "group": "qemu-riscv-7df9aa5f6d60",
-      "split": "development",
-      "window": 0,
-      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
-      "basis": 0,
+      "text": "Fixed release window contains the candidate object; direct raw Git ancestry check.",
       "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "5ba54cebb427307bac9de75c0ebfbf087957101f"
-        ]
+        "status": "original_reachable"
       }
     },
     {
-      "group": "qemu-riscv-7df9aa5f6d60",
-      "split": "development",
-      "window": 0,
-      "candidate": "7df9aa5f6d600584c556776505253e849b3902ee",
-      "basis": 1,
+      "text": "Stable commit records full original OID; full-file before/after bytes differ, so exact evidence is not established.",
       "expected": {
         "status": "backport_needs_review",
         "reason": "association_only",
-        "matches": [
-          "5ba54cebb427307bac9de75c0ebfbf087957101f"
-        ],
         "ancestry_complete": false
       }
     },
     {
-      "group": "qemu-riscv-7df9aa5f6d60",
-      "split": "development",
-      "window": 1,
-      "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
-      "basis": 2,
+      "text": "Nonempty bounded release-window negative: raw Git ancestry, all messages, stable patch IDs and full before/after bytes checked; no semantic absence claim.",
       "expected": {
         "status": "no_evidence_in_range"
       }
     },
     {
-      "group": "qemu-riscv-ddac7cfb00ad",
-      "split": "development",
-      "window": 0,
-      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
-      "basis": 0,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "0d4875d099a3246aeefc2e361c204279274dcdb8"
-        ]
-      }
-    },
-    {
-      "group": "qemu-riscv-ddac7cfb00ad",
-      "split": "development",
-      "window": 0,
-      "candidate": "ddac7cfb00ad771f6ef3450fff2d09e749fdbaf9",
-      "basis": 1,
-      "expected": {
-        "status": "backport_needs_review",
-        "reason": "association_only",
-        "matches": [
-          "0d4875d099a3246aeefc2e361c204279274dcdb8"
-        ],
-        "ancestry_complete": false
-      }
-    },
-    {
-      "group": "qemu-riscv-ddac7cfb00ad",
-      "split": "development",
-      "window": 1,
-      "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-riscv-9d6ac47d3182",
-      "split": "development",
-      "window": 0,
-      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
-      "basis": 0,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "ab845a4b74e0f7bd3fc4114838c253ffc25930ef"
-        ]
-      }
-    },
-    {
-      "group": "qemu-riscv-9d6ac47d3182",
-      "split": "development",
-      "window": 0,
-      "candidate": "9d6ac47d3182f2bdadea4bed596c82759a167e67",
-      "basis": 1,
-      "expected": {
-        "status": "backport_needs_review",
-        "reason": "association_only",
-        "matches": [
-          "ab845a4b74e0f7bd3fc4114838c253ffc25930ef"
-        ],
-        "ancestry_complete": false
-      }
-    },
-    {
-      "group": "qemu-riscv-9d6ac47d3182",
-      "split": "development",
-      "window": 1,
-      "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-riscv-ebfde6dafff2",
-      "split": "development",
-      "window": 0,
-      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
-      "basis": 0,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"
-        ]
-      }
-    },
-    {
-      "group": "qemu-riscv-ebfde6dafff2",
-      "split": "development",
-      "window": 0,
-      "candidate": "ebfde6dafff2ebfb653d8b9a620ea52a4f714f5b",
-      "basis": 1,
-      "expected": {
-        "status": "backport_needs_review",
-        "reason": "association_only",
-        "matches": [
-          "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"
-        ],
-        "ancestry_complete": false
-      }
-    },
-    {
-      "group": "qemu-riscv-ebfde6dafff2",
-      "split": "development",
-      "window": 1,
-      "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-riscv-57d98debdf8a",
-      "split": "development",
-      "window": 0,
-      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
-      "basis": 0,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "7d220b64fb4f6d909972ce10e2770047b297a14d"
-        ]
-      }
-    },
-    {
-      "group": "qemu-riscv-57d98debdf8a",
-      "split": "development",
-      "window": 0,
-      "candidate": "57d98debdf8a3a00e6022ad5c4dad1d8c4fa0f39",
-      "basis": 1,
-      "expected": {
-        "status": "backport_needs_review",
-        "reason": "association_only",
-        "matches": [
-          "7d220b64fb4f6d909972ce10e2770047b297a14d"
-        ],
-        "ancestry_complete": false
-      }
-    },
-    {
-      "group": "qemu-riscv-57d98debdf8a",
-      "split": "development",
-      "window": 1,
-      "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-control-0846740652d1",
-      "split": "independent",
-      "window": 0,
-      "candidate": "0846740652d1333369265fa075708b5a386c5ff6",
-      "basis": 3,
+      "text": "Control outside RISC-V rules: independent raw Git metadata and full before/after file byte equality, target reachability and stable trailer.",
       "expected": {
         "status": "strict_patch_evidence",
-        "matches": [
-          "eb8a247c05a319adbca4741105fa1717a60c1bb0"
-        ],
-        "ancestry_complete": false,
-        "strict_manifest": {
-          "version": 1,
-          "files": [
-            {
-              "path_b64": "aHcvaW5wdXQvcHMyLmM=",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "5516eb262d70dca89e1f42a6868531dfa900930c",
-                "sha256": "131104599498147a8c7822f9da410accfca7d1103653af414a05b53345f68677"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "e8300d2d8308629b052976a510ab16337bfc5229",
-                "sha256": "3da9cbceba4b4a44d710c3ee7fc604e5137027ec6298b973b03f29a2b85bbc7b"
-              }
-            }
-          ],
-          "candidate_parent": "884363589b68049cb344b8f8089464bada32a8e7",
-          "matches": [
-            {
-              "oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
-              "parent_oid": "f3c6a0a6dcae7b6beef21a9ee332c1c6e8035c8a"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "group": "qemu-control-0846740652d1",
-      "split": "independent",
-      "window": 1,
-      "candidate": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-control-2667133c2799",
-      "split": "independent",
-      "window": 0,
-      "candidate": "2667133c2799f670366b94059cc0513ae57fe8cb",
-      "basis": 3,
-      "expected": {
-        "status": "strict_patch_evidence",
-        "matches": [
-          "87d0c15627e189cb3b4dd84f65022cb75ee13adf"
-        ],
-        "ancestry_complete": false,
-        "strict_manifest": {
-          "version": 1,
-          "files": [
-            {
-              "path_b64": "am9iLmM=",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "e7479084726c661e75447fd1330ee7cdba888e88",
-                "sha256": "5170b4cb8b37b7f139f064a4bf0c8a8625362fd6a63173a995bad37b221c3d05"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "d7220aaf30cc53648d831eac95de4fa653773bd5",
-                "sha256": "48507da50458a40e1c8b143b4180ece8bc20e51e90f858b2d5583487b06a91fc"
-              }
-            }
-          ],
-          "candidate_parent": "9696bf5dc5a5bf0b4a9d05b6cdfe5f13990f97aa",
-          "matches": [
-            {
-              "oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
-              "parent_oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "group": "qemu-control-2667133c2799",
-      "split": "independent",
-      "window": 1,
-      "candidate": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-control-438ee08bc97a",
-      "split": "independent",
-      "window": 0,
-      "candidate": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
-      "basis": 3,
-      "expected": {
-        "status": "strict_patch_evidence",
-        "matches": [
-          "62a019079b32d3bdddc2856cadd6ddef4f719f8d"
-        ],
-        "ancestry_complete": false,
-        "strict_manifest": {
-          "version": 1,
-          "files": [
-            {
-              "path_b64": "dGVzdHMvdW5pdC90ZXN0LWJsb2Nram9iLmM=",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "abdbe4b8350908cc3698b03b157e5ab8592e5f0a",
-                "sha256": "f1b30f2d2b75251620bca0b95732de4d014ba33826fe6030e0a51dc87e2c312a"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "3b77d19b911e966b16066b3055fbf8f5db187048",
-                "sha256": "71302461b666150202ddda9dfc53c0b92ec81cc33992d6ca6d79f9f191d389a4"
-              }
-            }
-          ],
-          "candidate_parent": "2667133c2799f670366b94059cc0513ae57fe8cb",
-          "matches": [
-            {
-              "oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
-              "parent_oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "group": "qemu-control-438ee08bc97a",
-      "split": "independent",
-      "window": 1,
-      "candidate": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-control-59ecd8a1ac3f",
-      "split": "independent",
-      "window": 0,
-      "candidate": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
-      "basis": 3,
-      "expected": {
-        "status": "strict_patch_evidence",
-        "matches": [
-          "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"
-        ],
-        "ancestry_complete": false,
-        "strict_manifest": {
-          "version": 1,
-          "files": [
-            {
-              "path_b64": "YmxvY2svbW9uaXRvci9iaXRtYXAtcW1wLWNtZHMuYw==",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "a738e7bbf7a132fcb66a016c0e568993b5108932",
-                "sha256": "831941aba9a711e658e55e03c4087e67dd66c28fce61da97a2103adac5d736dd"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "d87ca982aa99f18e2c26d6c8dbedb52c25fb8d5d",
-                "sha256": "a14ae6898c8429a3f68ebc0e6bcfc32a7318b42de28b7e84236935bcbe9a492e"
-              }
-            },
-            {
-              "path_b64": "cWFwaS9ibG9jay1jb3JlLmpzb24=",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "1f87b078505ad1ec41c2a8efb037fed0b3cae069",
-                "sha256": "26774ef49256f152d3e52f76e61e750b75474eaf1e078400d322af7c638010ee"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "199efc1e00879a7ba6837573641e5e4106064291",
-                "sha256": "22b1d036051344b7d3d13efe6d10da249e36c10ac31139f01a5635b80a001e98"
-              }
-            },
-            {
-              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5n",
-              "before": {
-                "mode": "100755",
-                "blob_oid": "15be32dcb96430f25e1cd8e0b837bfcffc646229",
-                "sha256": "d9f0a2f7a1ddc8762e1c89069f20acb036ef2dfd7e5c8b93d56004cf929459f3"
-              },
-              "after": {
-                "mode": "100755",
-                "blob_oid": "a54984fa58e181b15dfd9c05751cc07cf4fb6e75",
-                "sha256": "c487d599cbe21c6ceebf43f56fab32423e54453fb6305911f847dce9e296c264"
-              }
-            },
-            {
-              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5nLm91dA==",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "c28af82c752d1d4b28a433570f6eabd387a1f610",
-                "sha256": "7c538d6816e3ad3d5f7da5b5503f078d98d8235a18f8f8f4eba81175b8de535b"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "fe105fe0a38248a3aa056f4b218a2474d5996b7a",
-                "sha256": "384067ba67850ae39874c9ffc44f2cb2c9bf0ce951cd3fd6c2c3d17c1e196798"
-              }
-            }
-          ],
-          "candidate_parent": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
-          "matches": [
-            {
-              "oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
-              "parent_oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "group": "qemu-control-59ecd8a1ac3f",
-      "split": "independent",
-      "window": 1,
-      "candidate": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "qemu-control-3f3f5cdb929e",
-      "split": "independent",
-      "window": 0,
-      "candidate": "3f3f5cdb929e8621699f92ee6e5018e1e6ea5bf2",
-      "basis": 3,
-      "expected": {
-        "status": "strict_patch_evidence",
-        "matches": [
-          "7a9ef209e1419e52efc57250d5add430484ae60a"
-        ],
-        "ancestry_complete": false,
-        "strict_manifest": {
-          "version": 1,
-          "files": [
-            {
-              "path_b64": "bWlncmF0aW9uL2Jsb2NrLWRpcnR5LWJpdG1hcC5j",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "cba54e25cd50da924e1958bdfc23ce060784b0ac",
-                "sha256": "c1f79b57014003214f099ea1f3ddcaea864f344822fb4fbc6ce52e75f537f0be"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "1b8f39c12bb2fabed44b68fea3e12f222676454d",
-                "sha256": "745225181c2cb30bab96a6c656adb6140df85dff10b702c26e4448596ade8f5f"
-              }
-            },
-            {
-              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0",
-              "before": {
-                "mode": "100755",
-                "blob_oid": "8fb4099201de4f4494cfee1f6ec99ee1721adee3",
-                "sha256": "111356e31b008f6f479744fda5df902f61600014910b83bac67522f0d624c25e"
-              },
-              "after": {
-                "mode": "100755",
-                "blob_oid": "cb9154ca8d7f64bbd5e66e6fbacb2ad407879f16",
-                "sha256": "6b86323ce777ebff3726eec9953ec42f229387793154bffc7e7c080dc4b358cb"
-              }
-            },
-            {
-              "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0Lm91dA==",
-              "before": {
-                "mode": "100644",
-                "blob_oid": "cafb8161f7b11e478e2c0834f228257fddcec155",
-                "sha256": "75c048d8217568e64d7ae281235f6a143b4ba009c4d48d0d33e6caa18062b52a"
-              },
-              "after": {
-                "mode": "100644",
-                "blob_oid": "73e375a9d74074bf4f023d1393b29c3c1486478b",
-                "sha256": "0231e10ea51ea3a0b1f78385c1c40f324de4c270a22025d79df4bf5fd83fef45"
-              }
-            }
-          ],
-          "candidate_parent": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
-          "matches": [
-            {
-              "oid": "7a9ef209e1419e52efc57250d5add430484ae60a",
-              "parent_oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "group": "qemu-control-3f3f5cdb929e",
-      "split": "independent",
-      "window": 1,
-      "candidate": "7a9ef209e1419e52efc57250d5add430484ae60a",
-      "basis": 2,
-      "expected": {
-        "status": "no_evidence_in_range"
-      }
-    },
-    {
-      "group": "llvm-riscv-3397c37d5d31",
-      "split": "independent",
-      "window": 2,
-      "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
-      "basis": 4,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "3397c37d5d31e4d4cf1226ba1c36824aa2287252"
-        ]
-      }
-    },
-    {
-      "group": "llvm-riscv-3397c37d5d31",
-      "split": "independent",
-      "window": 2,
-      "candidate": "589faedadf141e5e63f7a1e92a0327fc9bdc9b09",
-      "basis": 5,
-      "expected": {
-        "status": "backport_needs_review",
-        "reason": "association_only",
-        "matches": [
-          "3397c37d5d31e4d4cf1226ba1c36824aa2287252"
-        ],
         "ancestry_complete": false
       }
     },
     {
-      "group": "llvm-riscv-3397c37d5d31",
-      "split": "independent",
-      "window": 3,
-      "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
-      "basis": 6,
+      "text": "RISC-V changed path in fixed LLVM release range, raw Git ancestor relation. Title alone does not mention RISC-V.",
       "expected": {
-        "status": "no_evidence_in_range"
+        "status": "original_reachable"
       }
     },
     {
-      "group": "llvm-control-239189ca2884",
-      "split": "development",
-      "window": 2,
-      "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
-      "basis": 7,
-      "expected": {
-        "status": "original_reachable",
-        "matches": [
-          "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"
-        ]
-      }
-    },
-    {
-      "group": "llvm-control-239189ca2884",
-      "split": "development",
-      "window": 2,
-      "candidate": "239189ca28847aa4797368827107c22c32080509",
-      "basis": 5,
+      "text": "Explicit public upstream cherry-pick reference; full raw path/mode/before/after byte comparison is unequal, so technical association only, not strict confirmation.",
       "expected": {
         "status": "backport_needs_review",
         "reason": "association_only",
-        "matches": [
-          "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"
-        ],
         "ancestry_complete": false
       }
     },
     {
-      "group": "llvm-control-239189ca2884",
-      "split": "development",
-      "window": 3,
-      "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
-      "basis": 6,
+      "text": "Nonempty one-commit version-bump window precedes the candidate; independently inspect full window, not an empty-range control.",
       "expected": {
         "status": "no_evidence_in_range"
+      }
+    },
+    {
+      "text": "Raw Git ancestry in the pinned nonempty release/22.x window.",
+      "expected": {
+        "status": "original_reachable"
       }
     }
   ],
@@ -751,5 +214,405 @@
     "reverts": [],
     "matches": [],
     "ancestry_complete": true
-  }
+  },
+  "groups": [
+    {
+      "name": "qemu-riscv-7df9aa5f6d60",
+      "split": "development",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f",
+          "basis": 0,
+          "expected": {"matches": ["5ba54cebb427307bac9de75c0ebfbf087957101f"]}
+        },
+        {
+          "window": 0,
+          "candidate": "7df9aa5f6d600584c556776505253e849b3902ee",
+          "basis": 1,
+          "expected": {"matches": ["5ba54cebb427307bac9de75c0ebfbf087957101f"]}
+        },
+        {"window": 1, "candidate": "5ba54cebb427307bac9de75c0ebfbf087957101f", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-riscv-ddac7cfb00ad",
+      "split": "development",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8",
+          "basis": 0,
+          "expected": {"matches": ["0d4875d099a3246aeefc2e361c204279274dcdb8"]}
+        },
+        {
+          "window": 0,
+          "candidate": "ddac7cfb00ad771f6ef3450fff2d09e749fdbaf9",
+          "basis": 1,
+          "expected": {"matches": ["0d4875d099a3246aeefc2e361c204279274dcdb8"]}
+        },
+        {"window": 1, "candidate": "0d4875d099a3246aeefc2e361c204279274dcdb8", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-riscv-9d6ac47d3182",
+      "split": "development",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef",
+          "basis": 0,
+          "expected": {"matches": ["ab845a4b74e0f7bd3fc4114838c253ffc25930ef"]}
+        },
+        {
+          "window": 0,
+          "candidate": "9d6ac47d3182f2bdadea4bed596c82759a167e67",
+          "basis": 1,
+          "expected": {"matches": ["ab845a4b74e0f7bd3fc4114838c253ffc25930ef"]}
+        },
+        {"window": 1, "candidate": "ab845a4b74e0f7bd3fc4114838c253ffc25930ef", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-riscv-ebfde6dafff2",
+      "split": "development",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47",
+          "basis": 0,
+          "expected": {"matches": ["389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"]}
+        },
+        {
+          "window": 0,
+          "candidate": "ebfde6dafff2ebfb653d8b9a620ea52a4f714f5b",
+          "basis": 1,
+          "expected": {"matches": ["389e0fd0b9061ed7709b6aa651fbb4c3204cbe47"]}
+        },
+        {"window": 1, "candidate": "389e0fd0b9061ed7709b6aa651fbb4c3204cbe47", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-riscv-57d98debdf8a",
+      "split": "development",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d",
+          "basis": 0,
+          "expected": {"matches": ["7d220b64fb4f6d909972ce10e2770047b297a14d"]}
+        },
+        {
+          "window": 0,
+          "candidate": "57d98debdf8a3a00e6022ad5c4dad1d8c4fa0f39",
+          "basis": 1,
+          "expected": {"matches": ["7d220b64fb4f6d909972ce10e2770047b297a14d"]}
+        },
+        {"window": 1, "candidate": "7d220b64fb4f6d909972ce10e2770047b297a14d", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-control-0846740652d1",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "0846740652d1333369265fa075708b5a386c5ff6",
+          "basis": 3,
+          "expected": {
+            "matches": ["eb8a247c05a319adbca4741105fa1717a60c1bb0"],
+            "strict_manifest": {
+              "version": 1,
+              "files": [
+                {
+                  "path_b64": "aHcvaW5wdXQvcHMyLmM=",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "5516eb262d70dca89e1f42a6868531dfa900930c",
+                    "sha256": "131104599498147a8c7822f9da410accfca7d1103653af414a05b53345f68677"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "e8300d2d8308629b052976a510ab16337bfc5229",
+                    "sha256": "3da9cbceba4b4a44d710c3ee7fc604e5137027ec6298b973b03f29a2b85bbc7b"
+                  }
+                }
+              ],
+              "candidate_parent": "884363589b68049cb344b8f8089464bada32a8e7",
+              "matches": [
+                {
+                  "oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0",
+                  "parent_oid": "f3c6a0a6dcae7b6beef21a9ee332c1c6e8035c8a"
+                }
+              ]
+            }
+          }
+        },
+        {"window": 1, "candidate": "eb8a247c05a319adbca4741105fa1717a60c1bb0", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-control-2667133c2799",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "2667133c2799f670366b94059cc0513ae57fe8cb",
+          "basis": 3,
+          "expected": {
+            "matches": ["87d0c15627e189cb3b4dd84f65022cb75ee13adf"],
+            "strict_manifest": {
+              "version": 1,
+              "files": [
+                {
+                  "path_b64": "am9iLmM=",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "e7479084726c661e75447fd1330ee7cdba888e88",
+                    "sha256": "5170b4cb8b37b7f139f064a4bf0c8a8625362fd6a63173a995bad37b221c3d05"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "d7220aaf30cc53648d831eac95de4fa653773bd5",
+                    "sha256": "48507da50458a40e1c8b143b4180ece8bc20e51e90f858b2d5583487b06a91fc"
+                  }
+                }
+              ],
+              "candidate_parent": "9696bf5dc5a5bf0b4a9d05b6cdfe5f13990f97aa",
+              "matches": [
+                {
+                  "oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf",
+                  "parent_oid": "eb8a247c05a319adbca4741105fa1717a60c1bb0"
+                }
+              ]
+            }
+          }
+        },
+        {"window": 1, "candidate": "87d0c15627e189cb3b4dd84f65022cb75ee13adf", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-control-438ee08bc97a",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
+          "basis": 3,
+          "expected": {
+            "matches": ["62a019079b32d3bdddc2856cadd6ddef4f719f8d"],
+            "strict_manifest": {
+              "version": 1,
+              "files": [
+                {
+                  "path_b64": "dGVzdHMvdW5pdC90ZXN0LWJsb2Nram9iLmM=",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "abdbe4b8350908cc3698b03b157e5ab8592e5f0a",
+                    "sha256": "f1b30f2d2b75251620bca0b95732de4d014ba33826fe6030e0a51dc87e2c312a"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "3b77d19b911e966b16066b3055fbf8f5db187048",
+                    "sha256": "71302461b666150202ddda9dfc53c0b92ec81cc33992d6ca6d79f9f191d389a4"
+                  }
+                }
+              ],
+              "candidate_parent": "2667133c2799f670366b94059cc0513ae57fe8cb",
+              "matches": [
+                {
+                  "oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d",
+                  "parent_oid": "87d0c15627e189cb3b4dd84f65022cb75ee13adf"
+                }
+              ]
+            }
+          }
+        },
+        {"window": 1, "candidate": "62a019079b32d3bdddc2856cadd6ddef4f719f8d", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-control-59ecd8a1ac3f",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
+          "basis": 3,
+          "expected": {
+            "matches": ["2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"],
+            "strict_manifest": {
+              "version": 1,
+              "files": [
+                {
+                  "path_b64": "YmxvY2svbW9uaXRvci9iaXRtYXAtcW1wLWNtZHMuYw==",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "a738e7bbf7a132fcb66a016c0e568993b5108932",
+                    "sha256": "831941aba9a711e658e55e03c4087e67dd66c28fce61da97a2103adac5d736dd"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "d87ca982aa99f18e2c26d6c8dbedb52c25fb8d5d",
+                    "sha256": "a14ae6898c8429a3f68ebc0e6bcfc32a7318b42de28b7e84236935bcbe9a492e"
+                  }
+                },
+                {
+                  "path_b64": "cWFwaS9ibG9jay1jb3JlLmpzb24=",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "1f87b078505ad1ec41c2a8efb037fed0b3cae069",
+                    "sha256": "26774ef49256f152d3e52f76e61e750b75474eaf1e078400d322af7c638010ee"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "199efc1e00879a7ba6837573641e5e4106064291",
+                    "sha256": "22b1d036051344b7d3d13efe6d10da249e36c10ac31139f01a5635b80a001e98"
+                  }
+                },
+                {
+                  "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5n",
+                  "before": {
+                    "mode": "100755",
+                    "blob_oid": "15be32dcb96430f25e1cd8e0b837bfcffc646229",
+                    "sha256": "d9f0a2f7a1ddc8762e1c89069f20acb036ef2dfd7e5c8b93d56004cf929459f3"
+                  },
+                  "after": {
+                    "mode": "100755",
+                    "blob_oid": "a54984fa58e181b15dfd9c05751cc07cf4fb6e75",
+                    "sha256": "c487d599cbe21c6ceebf43f56fab32423e54453fb6305911f847dce9e296c264"
+                  }
+                },
+                {
+                  "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL3JlbW92ZS1iaXRtYXAtZnJvbS1iYWNraW5nLm91dA==",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "c28af82c752d1d4b28a433570f6eabd387a1f610",
+                    "sha256": "7c538d6816e3ad3d5f7da5b5503f078d98d8235a18f8f8f4eba81175b8de535b"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "fe105fe0a38248a3aa056f4b218a2474d5996b7a",
+                    "sha256": "384067ba67850ae39874c9ffc44f2cb2c9bf0ce951cd3fd6c2c3d17c1e196798"
+                  }
+                }
+              ],
+              "candidate_parent": "438ee08bc97af48ade6365133f2f5b43d4d788ae",
+              "matches": [
+                {
+                  "oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f",
+                  "parent_oid": "62a019079b32d3bdddc2856cadd6ddef4f719f8d"
+                }
+              ]
+            }
+          }
+        },
+        {"window": 1, "candidate": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f", "basis": 2}
+      ]
+    },
+    {
+      "name": "qemu-control-3f3f5cdb929e",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 0,
+          "candidate": "3f3f5cdb929e8621699f92ee6e5018e1e6ea5bf2",
+          "basis": 3,
+          "expected": {
+            "matches": ["7a9ef209e1419e52efc57250d5add430484ae60a"],
+            "strict_manifest": {
+              "version": 1,
+              "files": [
+                {
+                  "path_b64": "bWlncmF0aW9uL2Jsb2NrLWRpcnR5LWJpdG1hcC5j",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "cba54e25cd50da924e1958bdfc23ce060784b0ac",
+                    "sha256": "c1f79b57014003214f099ea1f3ddcaea864f344822fb4fbc6ce52e75f537f0be"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "1b8f39c12bb2fabed44b68fea3e12f222676454d",
+                    "sha256": "745225181c2cb30bab96a6c656adb6140df85dff10b702c26e4448596ade8f5f"
+                  }
+                },
+                {
+                  "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0",
+                  "before": {
+                    "mode": "100755",
+                    "blob_oid": "8fb4099201de4f4494cfee1f6ec99ee1721adee3",
+                    "sha256": "111356e31b008f6f479744fda5df902f61600014910b83bac67522f0d624c25e"
+                  },
+                  "after": {
+                    "mode": "100755",
+                    "blob_oid": "cb9154ca8d7f64bbd5e66e6fbacb2ad407879f16",
+                    "sha256": "6b86323ce777ebff3726eec9953ec42f229387793154bffc7e7c080dc4b358cb"
+                  }
+                },
+                {
+                  "path_b64": "dGVzdHMvcWVtdS1pb3Rlc3RzL3Rlc3RzL21pZ3JhdGUtYml0bWFwcy10ZXN0Lm91dA==",
+                  "before": {
+                    "mode": "100644",
+                    "blob_oid": "cafb8161f7b11e478e2c0834f228257fddcec155",
+                    "sha256": "75c048d8217568e64d7ae281235f6a143b4ba009c4d48d0d33e6caa18062b52a"
+                  },
+                  "after": {
+                    "mode": "100644",
+                    "blob_oid": "73e375a9d74074bf4f023d1393b29c3c1486478b",
+                    "sha256": "0231e10ea51ea3a0b1f78385c1c40f324de4c270a22025d79df4bf5fd83fef45"
+                  }
+                }
+              ],
+              "candidate_parent": "59ecd8a1ac3f05f572155a2d7a81fbeec397e2d3",
+              "matches": [
+                {
+                  "oid": "7a9ef209e1419e52efc57250d5add430484ae60a",
+                  "parent_oid": "2ff183b94fbad0a5e7bb8c3d3ddb7e7c48d0e07f"
+                }
+              ]
+            }
+          }
+        },
+        {"window": 1, "candidate": "7a9ef209e1419e52efc57250d5add430484ae60a", "basis": 2}
+      ]
+    },
+    {
+      "name": "llvm-riscv-3397c37d5d31",
+      "split": "independent",
+      "cases": [
+        {
+          "window": 2,
+          "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252",
+          "basis": 4,
+          "expected": {"matches": ["3397c37d5d31e4d4cf1226ba1c36824aa2287252"]}
+        },
+        {
+          "window": 2,
+          "candidate": "589faedadf141e5e63f7a1e92a0327fc9bdc9b09",
+          "basis": 5,
+          "expected": {"matches": ["3397c37d5d31e4d4cf1226ba1c36824aa2287252"]}
+        },
+        {"window": 3, "candidate": "3397c37d5d31e4d4cf1226ba1c36824aa2287252", "basis": 6}
+      ]
+    },
+    {
+      "name": "llvm-control-239189ca2884",
+      "split": "development",
+      "cases": [
+        {
+          "window": 2,
+          "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1",
+          "basis": 7,
+          "expected": {"matches": ["ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"]}
+        },
+        {
+          "window": 2,
+          "candidate": "239189ca28847aa4797368827107c22c32080509",
+          "basis": 5,
+          "expected": {"matches": ["ca7933e47d3a3451d81e72ac174dcb5aa28b59d1"]}
+        },
+        {"window": 3, "candidate": "ca7933e47d3a3451d81e72ac174dcb5aa28b59d1", "basis": 6}
+      ]
+    }
+  ]
 }
