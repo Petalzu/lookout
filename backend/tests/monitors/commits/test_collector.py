@@ -164,14 +164,16 @@ def test_permanent_failure_does_not_starve_unseen_candidate(package, monkeypatch
     assert len(set(calls)) == 2
 
 
-@pytest.mark.parametrize('has_batch', [False, True], ids=['initial', 'refresh'])
-def test_fetch_failure_shares_check_without_advancing_observation(package, monkeypatch, has_batch):
+@pytest.mark.parametrize('relation', [None, 'current', 'outdated'], ids=['initial', 'same-target', 'expired-upgrade'])
+def test_fetch_failure_shares_check_without_advancing_observation(package, monkeypatch, relation):
     config, db, repo, _, _ = package
+    monkeypatch.setattr(state, 'compare', lambda *_: relation or 'unknown')
     previous = (collect(config, db, repositories={'fixture': repo}, now=STAMP)['commits_batches']['binutils']['active']
-                if has_batch else None)
+                if relation else None)
+    retained = relation == 'current'  # At NEXT the upstream has expired, so an earlier upgrade is no longer eligible.
     monkeypatch.setattr(repo, 'resolve', lambda ref: (_ for _ in ()).throw(GitError('timeout')))
     result = collect(config, db, repositories={'fixture': repo}, now=NEXT)
-    assert result['commits_batches']['binutils'].get('active') == previous
+    assert result['commits_batches']['binutils'].get('active') == (previous if retained else None)
     with ProjectedClient(create_app(db)) as client:
         response = client.get('/api/v2/packages/binutils?include=commits')
         assert response.status_code == 200, response.text
@@ -181,8 +183,8 @@ def test_fetch_failure_shares_check_without_advancing_observation(package, monke
         assert history.status_code == 200, history.text
         facts = history.json()
         assert facts['check'] == summary and facts['repository'] == 'fixture'
-        assert summary['configured'] and summary['checked_at'] == (STAMP if has_batch else None)
-        assert summary['attempted_at'] == NEXT and bool(facts['items']) == has_batch
+        assert summary['configured'] and summary['checked_at'] == (STAMP if retained else None)
+        assert summary['attempted_at'] == NEXT and bool(facts['items']) == retained
         assert all(item['stale'] for item in facts['items'])
         document = client.get('/api/ui/packages/binutils/commits')
         assert document.status_code == 200, document.text
@@ -334,15 +336,7 @@ def test_target_sides_can_succeed_and_fail_independently(package, monkeypatch):
         oid='e' * 40, source_revision=revision, source_url='https://example.org/new-source.tar.xz',
         review_url='https://example.org/new-review')
     config['commits']['batch_size'] = 10
-
-    def unknown_target(*args, **kwargs):
-        if args[0] == 'e' * 40:
-            raise GitError('missing_object')
-        return resolve(*args, **kwargs)
-
-    resolve = repo.resolve
-    monkeypatch.setattr(repo, 'resolve', unknown_target)
-    monkeypatch.setattr(repo, 'fetch', lambda *a, **k: (_ for _ in ()).throw(collector.GitError('timeout')))
+    monkeypatch.setattr(repo, 'fetch', lambda *a, **k: (_ for _ in ()).throw(GitError('timeout')))
     result = collect(config, db, repositories={'fixture': repo}, now=STAMP)
     batch = result['commits_batches']['binutils']['active']
     assert batch['entries'][0]['sides']['current']['status'] == 'original_reachable'
