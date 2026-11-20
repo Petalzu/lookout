@@ -150,6 +150,9 @@ def main():
             policies = {**obs.polling(config), "upstreams": nv.polling(config)}
             if github.settings(config).repositories:
                 policies['github'] = github.polling(config, authenticated=bool(os.environ.get('LOOKOUT_GITHUB_TOKEN')))
+            from tracker.monitors.commits import model as commits
+            if commits.package_policies(config):
+                policies['commits'] = commits.polling(config)
             monitors = monitor.settings(config)
             if monitors["enabled"]:
                 policies["monitors"] = monitor.polling(config)

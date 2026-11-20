@@ -10,6 +10,7 @@ from urllib.parse import parse_qs, quote, urlsplit, urlunsplit
 from tracker import catalog
 from tracker.catalog import read_input
 from tracker.identity import request_url
+from tracker.monitors.commits.model import package_policies as commit_packages
 from tracker.monitors.github.model import settings as github_settings
 
 
@@ -32,6 +33,7 @@ def load(path):
     _spec_settings(config)
     _origin_settings(config)
     github_settings(config)
+    commit_packages(config)
     return config
 
 

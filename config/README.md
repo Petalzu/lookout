@@ -292,3 +292,10 @@ The result covers discovered source-tag modules and explicit includes, not every
 module present in a repository or installed RPM. All must validate before their
 highest Go minimum is published. Current archives cannot describe an upgrade or
 establish independent component versions for Security or Yanked queries.
+
+### Upstream commit evidence
+
+The optional independent `commits` batch monitor uses reviewed repository and
+package policies. See [Commit evidence](../docs/commits.md) for fixed source
+mappings, rule semantics, budgets, API queries, and interpretation limits.
+It is not an entry in the HTTP-adapter `[monitors].enabled` list.

@@ -20,6 +20,10 @@ const batch = '/api/v2/packages:batchGet?names=bash&names=openssl&include=versio
         <tr><td><code>/packages:batchGet</code></td>
           <td>Full observations for 1–20 unique packages. Repeat <code>names</code> to specify request order.
             Any missing name fails the batch.</td></tr>
+        <tr><td><code>/packages/{'{name}'}/commits</code></td>
+          <td>Published historical commit evidence. Optional <code>status</code> and <code>rule</code> filters,
+            <code>per_page≤50</code> and a batch-bound <code>cursor</code>. A replaced batch/filter returns 422;
+            restart at the first page. Missing or partial evidence does not establish functional absence.</td></tr>
         <tr><td><a href="/api/v2/tracks/meson"><code>/tracks/{'{id}'}</code></a></td><td>Saved version-track observation.</td></tr>
         <tr><td><a href="/api/v2/targets"><code>/targets</code></a></td><td>OBS target identities.</td></tr>
         <tr><td><a href="/api/v2/status"><code>/status</code></a></td><td>Collection freshness, per-monitor coverage and grouped failures.</td></tr>

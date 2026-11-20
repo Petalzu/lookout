@@ -360,6 +360,29 @@ def test_upgrade_lock_is_owned_by_instance_not_backup_directory(deployment):
                 pytest.fail('concurrent upgrade admitted')
 
 
+@pytest.mark.parametrize('engine', ['docker', 'podman'])
+@pytest.mark.parametrize('status', ['exited', 'running', 'paused', 'restarting', None])
+def test_data_user_check_rechecks_listed_container_state(tmp_path, monkeypatch, engine, status):
+    from types import SimpleNamespace
+    data = tmp_path / 'data'
+    service = SimpleNamespace(engine=engine, settings={'data': data if engine == 'podman' else 'fixture-data'})
+    info = {'State': {'Status': status} if status else {},
+            'Mounts': [{'Name': 'fixture-data', 'Source': str(data)}]}
+
+    def run(argv):
+        if argv == [engine, 'ps', '-q']:
+            return 'listed-container'
+        assert argv == [engine, 'inspect', 'listed-container']
+        return json.dumps([info])
+
+    monkeypatch.setattr(operations, 'run', run)
+    if status == 'exited':
+        operations.no_data_users(service)
+    else:
+        with pytest.raises(RuntimeError, match='another running container'):
+            operations.no_data_users(service)
+
+
 def test_docker_lock_is_scoped_by_daemon_and_instance(tmp_path, monkeypatch):
     from types import SimpleNamespace
     monkeypatch.setenv('XDG_STATE_HOME', str(tmp_path))

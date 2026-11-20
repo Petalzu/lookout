@@ -371,6 +371,8 @@ def retained_dimensions(results):
             observations = data['findings']
         elif data['kind'] == 'requires' and data['requirements']:
             observations = data['findings']
+        elif data['kind'] == 'commits':
+            observations = data['entries']
         else:
             observations = []
         dimension = 'retained:' + monitor
@@ -391,7 +393,9 @@ def registry(snapshot):
     saved = snapshot.get('monitor_catalog', {})
     ids = set(saved)
     ids.difference_update(monitor_model.CORE_IDS)
-    return (*CORE, *((Monitor('github', 'GitHub', 'activity', activity.project),) if snapshot.get('github_repositories') else ()), *(Monitor(mid, observation_label(mid, saved[mid]['title']),
+    from tracker.readmodel import commits
+    return (*CORE, *((Monitor('commits', 'Commits', 'commits', commits.project),)
+                    if snapshot.get('commits_batches') else ()), *((Monitor('github', 'GitHub', 'activity', activity.project),) if snapshot.get('github_repositories') else ()), *(Monitor(mid, observation_label(mid, saved[mid]['title']),
                             'requires' if mid == 'requires' else 'evidence',
                             requires if mid == 'requires' else partial(evidence, monitor_id=mid))
                     for mid in sorted(ids)))
@@ -410,6 +414,9 @@ def summary(result, *, focused=False):
                 'requirements': data['requirements'] if focused else []}
     elif data['kind'] == 'activity':
         pass
+    elif data['kind'] == 'commits':
+        # Summaries are bounded package counts; candidate evidence belongs to detail/history.
+        data = {**data, 'entries': []}
     else:
         # Compact identifiers are complete within the paginated package list.
         # Provider facts and histories still belong to the detail endpoint.

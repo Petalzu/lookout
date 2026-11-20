@@ -44,6 +44,9 @@ def next_transition(snapshot, now):
             observe(fact, snapshot.get('monitor_stale_after_seconds', 86400))
             for scope in fact.get('scope_checks', {}).values():
                 observe(scope, snapshot.get('monitor_stale_after_seconds', 86400))
+    for batches in snapshot.get('commits_batches', {}).values():
+        batch = batches.get('active', {})
+        observe(batch, batch.get('stale_after_seconds', 86400))
     changes = (state.next_stale_change({'fetched_at': stamp}, now, lifetime) for stamp, lifetime in checks)
     return min((change for change in changes if change is not None), default=None)
 

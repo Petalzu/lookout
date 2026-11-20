@@ -408,7 +408,17 @@ def test_monitor_data_contract_is_discriminated_by_kind(snapshot):
             model.model_validate(broken)
         schema = model.model_json_schema()['properties']['data']
         assert schema['discriminator']['propertyName'] == 'kind'
-        assert set(schema['discriminator']['mapping']) == {'source', 'version', 'build', 'evidence', 'requires', 'activity'}
+        assert set(schema['discriminator']['mapping']) == {
+            'source', 'version', 'build', 'evidence', 'requires', 'activity', 'commits',
+        }
+        commits = {**source, 'id': 'commits', 'title': 'Commits', 'data': {
+            'kind': 'commits', 'entries': [], 'selected': 0, 'total': 0,
+            'batch_id': None, 'repository': None, 'coverage': {}, 'labels': [],
+        }}
+        assert model.model_validate(commits).data.kind == 'commits'
+        commits['data']['kind'] = 'source'
+        with pytest.raises(ValidationError):
+            model.model_validate(commits)
 
 
 def test_spec_link_uses_the_path_as_its_only_label(snapshot):

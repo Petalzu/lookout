@@ -11,10 +11,11 @@ from typing import Any
 type Snapshot = dict[str, Any]
 
 
-FORMAT = 3
-# Collection shape, not provider identity. Adding an adapter needs no SQL schema.
-DEPTH = dict(sources=1, tracks=1, specs=1, inventory=1, index=1, components=1,
-             builds=2, monitors=2, github_items=2, github_links=2)
+FORMAT = 4
+# Collection shape, not provider identity. Older row formats reject new collections.
+LEGACY_DEPTH = dict(sources=1, tracks=1, specs=1, inventory=1, index=1, components=1,
+                    builds=2, monitors=2, github_items=2, github_links=2)
+DEPTH = dict(LEGACY_DEPTH, commits_records=2, commits_scans=2, commits_evidence=2, commits_batches=2)
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,17 @@ def pack(snapshot, previous=None):
                                                       else encode(observation))
     header = encode(dict(storage=FORMAT, snapshot=metadata, sections=sections))
     return header, records
+
+
+def _unpack_header(header, version):
+    if not isinstance(header, dict) or header.get('storage') != version:
+        raise ValueError('snapshot payload is invalid')
+    snapshot = validate(header.get('snapshot'))
+    sections = header.get('sections')
+    collections = DEPTH if version == FORMAT else LEGACY_DEPTH
+    if not isinstance(sections, dict) or set(sections) - collections.keys():
+        raise ValueError('snapshot collections are invalid')
+    return snapshot, sections
 
 
 def _create(conn):
@@ -161,7 +173,7 @@ def read(db, previous: tuple[Snapshot, Revision | None] | None = None) -> tuple[
     with closing(sqlite3.connect(Path(db).resolve().as_uri() + '?mode=ro', uri=True, timeout=10)) as conn:
         conn.execute('BEGIN')
         version = conn.execute('PRAGMA user_version').fetchone()[0]
-        if version not in (0, 2, FORMAT):
+        if version not in (0, 2, 3, FORMAT):
             raise ValueError('unsupported database storage version')
         clock = conn.execute('SELECT revision, build_checked_at FROM snapshot_clock WHERE id=1').fetchone()
         if clock is None:
@@ -175,7 +187,7 @@ def read(db, previous: tuple[Snapshot, Revision | None] | None = None) -> tuple[
         if row is None:
             raise ValueError('snapshot row is missing')
         revisions, payloads = {}, {}
-        if version in (2, FORMAT):
+        if version in (2, 3, FORMAT):
             if prior:
                 revisions = {tuple(r[:3]): r[3] for r in conn.execute(
                     'SELECT section, subject, slot, revision FROM snapshot_records')}
@@ -196,12 +208,7 @@ def read(db, previous: tuple[Snapshot, Revision | None] | None = None) -> tuple[
     if version == 0:
         validate(header)
         return header, Revision(token, build_stamp=stamp), stamp
-    if not isinstance(header, dict) or header.get('storage') != version:
-        raise ValueError('snapshot payload is invalid')
-    snapshot = validate(header.get('snapshot'))
-    sections = header.get('sections')
-    if not isinstance(sections, dict) or set(sections) - DEPTH.keys():
-        raise ValueError('snapshot collections are invalid')
+    snapshot, sections = _unpack_header(header, version)
     for section, empty in sections.items():
         snapshot[section] = {name: {} for name in empty}
     for key in revisions:
@@ -224,13 +231,14 @@ def read(db, previous: tuple[Snapshot, Revision | None] | None = None) -> tuple[
 
 
 def migrate(db):
-    """Explicit, transactional conversion from the deployed snapshot format.
+    """Explicit, transactional conversion from formats 0, 2 and 3 to format 4.
 
     The caller must stop collectors and create a verified backup first. Readers
     can inspect the old format; ordinary writes never migrate it implicitly.
     """
     path = Path(db)
     with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=rw', uri=True, timeout=10)) as conn:
+        conn.execute('PRAGMA journal_mode=DELETE')
         conn.execute('PRAGMA synchronous=FULL')
         conn.execute('BEGIN IMMEDIATE')
         try:
@@ -238,13 +246,16 @@ def migrate(db):
             if version == FORMAT:
                 conn.rollback()
                 return False
-            if version == 2:
+            if version in (2, 3):
                 row = conn.execute('SELECT payload FROM snapshot WHERE id=1').fetchone()
-                if row is None:
-                    raise ValueError('snapshot row is missing')
+                clock = conn.execute('SELECT revision FROM snapshot_clock WHERE id=1').fetchone()
+                if row is None or clock is None:
+                    raise ValueError('snapshot or clock row is missing')
                 header = json.loads(row[0])
-                if header.get('storage') != 2:
-                    raise ValueError('snapshot storage header is invalid')
+                _, sections = _unpack_header(header, version)
+                if any(section not in sections for section, in conn.execute(
+                        'SELECT DISTINCT section FROM snapshot_records')):
+                    raise ValueError('observation has no collection')
                 header['storage'] = FORMAT
                 conn.execute('UPDATE snapshot SET payload=? WHERE id=1', (encode(header),))
                 conn.execute('UPDATE snapshot_clock SET revision=? WHERE id=1', (uuid.uuid4().hex,))

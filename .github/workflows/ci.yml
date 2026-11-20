@@ -130,7 +130,8 @@ jobs:
           retention-days: 1
   upload-coverage-python:
     needs: native
-    if: ${{ !cancelled() && needs.native.result == 'success' && !inputs.release && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    # Code Quality is not available on every fork; native coverage artifacts remain mandatory.
+    if: ${{ !cancelled() && needs.native.result == 'success' && !inputs.release && (!github.event.repository.fork || vars.LOOKOUT_CODE_QUALITY_ENABLED == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:

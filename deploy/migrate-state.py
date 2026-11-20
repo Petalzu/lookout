@@ -20,7 +20,7 @@ def migrate(db, backup, timeout=30):
         before = state.read(path)
         if version == storage.FORMAT:
             return False
-        if version not in (0, 2):
+        if version not in (0, 2, 3):
             raise ValueError('unsupported database storage version; no migration performed')
         create_backup = runpy.run_path(str(ROOT / 'deploy/backup-snapshot.py'))['backup']
         create_backup(path, backup, timeout)

@@ -118,6 +118,7 @@ class PackageList:
             'maintenance_labels': counts('maintenance', required=(*Issue, 'EOL')),
             'version_signals': counts('version_signal', required=('requires',)),
             'requires_counts': {'all': total, **counts('requires', required=('unmet', 'changes'))},
+            'commits_counts': {key: counts('commits:' + key) for key in ('status', 'repository', 'rule')},
             'build_statuses': statuses,
             'check_statuses': {k: v for k, v in checks.items() if k not in monitor_model.CHECK_GROUPS},
             'check_groups': {group: checks.get(group, 0) for group in monitor_model.CHECK_GROUPS},

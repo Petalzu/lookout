@@ -1,0 +1,28 @@
+# Explicit opt-in example, not loaded by the shipped tracker configuration.
+# Merge this commits unit into the existing distribution catalog or [openruyi.commits] override.
+[commits]
+interval_seconds = 3600
+stale_after_seconds = 86400
+batch_size = 32
+max_findings = 1000
+max_batch_bytes = 4194304
+
+[commits.repositories.qemu]
+url = "https://github.com/qemu/qemu.git"
+web_url = "https://github.com/qemu/qemu"
+ref = "refs/heads/stable-11.1"
+window_start = "c3d48b7d1e89604920e5b81b91140c2ad39a1943"
+analysis_start = "c3d48b7d1e89604920e5b81b91140c2ad39a1943"
+fetch_depth = 256
+scan_limit = 2000
+history_limit = 2000
+
+[commits.repositories.llvm]
+url = "https://github.com/llvm/llvm-project.git"
+web_url = "https://github.com/llvm/llvm-project"
+ref = "refs/heads/release/22.x"
+window_start = "a255c1ed36a1d06f79bd2633ba9f8d900153007c"
+analysis_start = "a255c1ed36a1d06f79bd2633ba9f8d900153007c"
+fetch_depth = 128
+scan_limit = 2000
+history_limit = 2000

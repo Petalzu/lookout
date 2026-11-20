@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 
 from tracker.presentation.activity import sections as activity_sections
 from tracker.presentation.build import build_cells, build_columns, build_sections
+from tracker.presentation.commits import cells as commits_cells
+from tracker.presentation.commits import sections as commits_sections
 from tracker.presentation.evidence import evidence_cells, evidence_lines, evidence_section
 from tracker.presentation.model import Cell, Column, Section, Text
 from tracker.presentation.requires import requires_cells, requires_preview, requires_sections
@@ -41,6 +43,7 @@ class Presenter:
 
 PRESENTERS = {
     'activity': Presenter(activity_sections),
+    'commits': Presenter(commits_sections, single_column, commits_cells),
     'source': Presenter(source_sections),
     'version': Presenter(version_sections, single_column, version_cells),
     'build': Presenter(build_sections, build_columns, build_cells),
